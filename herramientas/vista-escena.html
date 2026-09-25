@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vista de una escena</title>
+<!--
+  vista-escena.html — Dibuja UNA escena, quieta, en el instante que se pida.
+
+  Para qué: ver cómo queda una pantalla sin tener que jugar hasta ella, y poder
+  mirarla desde un agente con Chrome sin interfaz. Las capturas sin interfaz NO
+  incluyen el lienzo, así que la página también exporta la imagen a un cuadro de
+  texto en la página (data URL), que sí sale en el volcado del DOM.
+
+  Uso:  http://localhost:8740/herramientas/vista-escena.html?escena=ruta&t=2.9
+        &completada=mapa     (solo para la ruta: qué etapa se acaba de terminar)
+
+  Desde un agente:
+    chrome --headless=new --window-size=1600,900 --virtual-time-budget=4000 \
+      --dump-dom "http://localhost:8740/herramientas/vista-escena.html?escena=ruta&t=2.9"
+  y de la salida se saca el "data:image/jpeg;base64,...".
+
+  Esto es una herramienta de desarrollo: no forma parte del juego.
+-->
+<style>
+  html, body { margin: 0; background: #05070c; overflow: hidden; }
+  /* Igual que en index.html: el 3D va detrás del lienzo de siempre. */
+  #lienzo3d { position: fixed; inset: 0; display: none; width: 100vw; height: 100vh; z-index: 0; }
+  #lienzo { position: relative; display: block; width: 100vw; height: 100vh; z-index: 1; }
+  #png { position: fixed; left: -9999px; width: 10px; height: 10px; }
+  #err { position: fixed; top: 8px; left: 8px; margin: 0; color: #e0614a;
+    font: 13px Consolas, monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<canvas id="lienzo3d"></canvas>
+<canvas id="lienzo"></canvas>
+<textarea id="png"></textarea>
+<pre id="err"></pre>
+<script>
+  addEventListener('error', (e) => { document.getElementById('err').textContent = 'ERROR: ' + e.message; });
+  addEventListener('unhandledrejection', (e) => { document.getElementById('err').textContent = 'ERROR: ' + e.reason; });
+</script>
+<script type="module">
+import { JoyCon } from '../src/core/joycon.js';
+import { Motor } from '../src/core/engine.js';
+import { EscenaRuta } from '../src/juego/escenas/ruta.js';
+import { EscenaIntro } from '../src/juego/escenas/intro.js';
+import { EscenaCierre } from '../src/juego/escenas/cierre.js';
+import { EscenaCamino } from '../src/juego/escenas/camino.js';
+import { EscenaPrueba2J } from '../src/juego/escenas/prueba2j.js';
+import { EscenaRegreso } from '../src/juego/escenas/regreso.js';
+import { EscenaMapa } from '../src/juego/escenas/mapa.js';
+import { evaluar, REGIONES } from '../src/datos/territorio.js';
+
+const q = new URLSearchParams(location.search);
+const nombre = q.get('escena') || 'ruta';
+const t = parseFloat(q.get('t') || '2.9');
+const jugadores = Math.max(1, Math.min(2, parseInt(q.get('jugadores') || '1', 10)));
+
+const motor = new Motor(document.getElementById('lienzo'), [new JoyCon(), new JoyCon()]);
+for (let i = 0; i < jugadores; i++) motor.jugadores[i].estado.conectado = true;
+// Escenas de mentira: solo hacen falta sus nombres para saber a dónde se iría.
+['mapa', 'camino', 'cierre'].forEach((n) => motor.escenas.set(n, {}));
+
+// Un progreso verosímil, para que las pantallas muestren números reales.
+motor.expedicion.puntajes.mapa = { elegidas: [{}, {}, {}, {}, {}], vision: 46, islaDescubierta: false };
+motor.expedicion.puntajes.camino = { resultados: [{ hallazgos: 9, existentes: 14 }], ganador: 0 };
+
+const escenas = {
+  ruta: () => new EscenaRuta(motor),
+  intro: () => new EscenaIntro(motor),
+  cierre: () => new EscenaCierre(motor),
+  camino: () => new EscenaCamino(motor),
+  prueba2j: () => new EscenaPrueba2J(motor),
+  regreso: () => new EscenaRegreso(motor),
+  mapa: () => new EscenaMapa(motor),
+};
+const escena = (escenas[nombre] || escenas.ruta)();
+
+const datos = nombre === 'ruta'
+  ? { completada: q.get('completada') || 'mapa' }
+  : nombre === 'cierre' ? motor.expedicion.puntajes.mapa : null;
+
+await escena.entrar(datos);
+
+// Para ver una fase concreta sin jugar la etapa entera: &fase=revelacion
+const fase = q.get('fase');
+if (fase && nombre === 'mapa') {
+  escena.elegidas = REGIONES.slice(0, 5);
+  escena.resultado = evaluar(escena.elegidas, 0.42);
+  escena.fase = fase;
+  escena.tFase = 0;
+  escena.paginaRes = escena._ultimaPagina;
+} else if (fase) {
+  escena.fase = fase;
+  escena.tFase = 0;
+}
+// Se avanza a saltos de un fotograma: es como corre de verdad. Las pantallas
+// que esperan una pulsación (instrucciones, tablero) se pasan solas, salvo que
+// se pida auto=0: así `t` cuenta desde que arranca la escena.
+const auto = q.get('auto') !== '0';
+for (let k = 0; k < Math.round(t * 60); k++) {
+  if (auto && (escena.fase === 'guia' || escena.fase === 'tablero')) {
+    if (escena.teclado && typeof escena.teclado === 'object') escena.teclado.confirmar = true;
+    else escena.teclado = true;
+  }
+  escena.actualizar(1 / 60);
+}
+escena.dibujar(motor.ctx);
+
+// La imagen, en pequeño, dentro de la página.
+const mini = document.createElement('canvas');
+mini.width = 900;
+mini.height = Math.round(900 * motor.canvas.height / motor.canvas.width);
+const mc = mini.getContext('2d');
+const tres = document.getElementById('lienzo3d');
+if (tres && tres.style.display !== 'none') mc.drawImage(tres, 0, 0, mini.width, mini.height);
+mc.drawImage(motor.canvas, 0, 0, mini.width, mini.height);
+document.getElementById('png').textContent = mini.toDataURL('image/jpeg', 0.72);
+</script>
+</body>
+</html>

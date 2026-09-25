@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Windows / OneDrive
+Thumbs.db
+desktop.ini
+*.lnk
+
+# macOS
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Node: este proyecto NO usa npm. Si alguien lo instala por costumbre, que no suba.
+node_modules/
+package-lock.json
+
+# Nada de lo anterior es necesario para jugar ni para trabajar en el proyecto.
+# Lo que SÍ va al repositorio, aunque pese: `vendor/` (Three.js, la única
+# librería, copiada a propósito) y `assets/originales/` (las imágenes tal como
+# salieron de la IA, que hacen falta para volver a procesarlas).

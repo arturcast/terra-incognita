@@ -1,0 +1,5 @@
+Deja aquí las imágenes generadas con IA, con el nombre exacto que indica
+docs/ACTIVOS-VISUALES.md (por ejemplo: obj-dato.png, regreso-paloma-cuerpo.png).
+
+No las edites ni las renombres: el agente las procesa (quita el fondo verde,
+recorta, escala) y deja el resultado en la carpeta assets/.

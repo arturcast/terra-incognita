@@ -1,0 +1,837 @@
+<title>Guion de Terra Incógnita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root{
+    --papel:#e9edee;
+    --hoja:#f7f8f8;
+    --hoja2:#ffffff;
+    --tinta:#132530;
+    --tinta2:#4d6270;
+    --tinta3:#7f929c;
+    --linea:#cbd5d8;
+    --oro:#a1701a;
+    --oroSuave:#f0e3c6;
+    --rojo:#b53a2c;
+    --rojoSuave:#f6e2de;
+    --azul:#24648f;
+    --azulSuave:#dde9f1;
+    --verde:#2f7a5f;
+    --verdeSuave:#dfeee7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --papel:#0c151c;
+      --hoja:#111d26;
+      --hoja2:#152430;
+      --tinta:#e7e1d2;
+      --tinta2:#9fb0ba;
+      --tinta3:#74868f;
+      --linea:#253944;
+      --oro:#d9a441;
+      --oroSuave:#2b2415;
+      --rojo:#e0614a;
+      --rojoSuave:#2e1a17;
+      --azul:#5aa9e6;
+      --azulSuave:#132836;
+      --verde:#4ec9a5;
+      --verdeSuave:#12271f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --papel:#0c151c;
+    --hoja:#111d26;
+    --hoja2:#152430;
+    --tinta:#e7e1d2;
+    --tinta2:#9fb0ba;
+    --tinta3:#74868f;
+    --linea:#253944;
+    --oro:#d9a441;
+    --oroSuave:#2b2415;
+    --rojo:#e0614a;
+    --rojoSuave:#2e1a17;
+    --azul:#5aa9e6;
+    --azulSuave:#132836;
+    --verde:#4ec9a5;
+    --verdeSuave:#12271f;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--papel);
+    color:var(--tinta);
+    font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .envoltura{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+  .col{max-width:680px}
+
+  /* ---------------- barra ---------------- */
+  nav.barra{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+    background:color-mix(in srgb,var(--papel) 92%,transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--linea);
+    margin-inline:-20px;padding:10px 20px;
+    display:flex;gap:6px;overflow-x:auto;align-items:center;
+    scrollbar-width:none;
+  }
+  nav.barra::-webkit-scrollbar{display:none}
+  nav.barra a{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--tinta2);text-decoration:none;white-space:nowrap;
+    padding:5px 9px;border-radius:3px;
+  }
+  nav.barra a:hover{color:var(--tinta);background:var(--hoja)}
+  nav.barra .marca{font-family:"Spectral",Georgia,serif;text-transform:none;letter-spacing:0;
+    font-size:14px;color:var(--oro);padding-right:10px;border-right:1px solid var(--linea);margin-right:4px}
+
+  /* ---------------- portada ---------------- */
+  header.portada{padding-block:56px 40px;border-bottom:2px solid var(--tinta);margin-bottom:8px}
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--oro);margin:0 0 14px;
+  }
+  h1{
+    font-family:"Spectral",Georgia,serif;font-weight:600;
+    font-size:clamp(38px,7vw,64px);line-height:1.02;letter-spacing:-.015em;
+    margin:0 0 18px;text-wrap:balance;
+  }
+  .bajada{font-family:"Spectral",Georgia,serif;font-style:italic;font-size:clamp(18px,2.4vw,21px);
+    line-height:1.5;color:var(--tinta2);margin:0;max-width:620px}
+  .meta{display:flex;flex-wrap:wrap;gap:0 34px;margin-top:30px}
+  .meta div{min-width:130px}
+  .meta dt{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--tinta3);margin-bottom:2px}
+  .meta dd{margin:0;font-size:14.5px;font-weight:500}
+
+  /* ---------------- secciones ---------------- */
+  section{padding-block:46px;border-bottom:1px solid var(--linea)}
+  section:last-of-type{border-bottom:none}
+  h2{
+    font-family:"Spectral",Georgia,serif;font-weight:600;font-size:clamp(26px,4vw,34px);
+    line-height:1.15;margin:0 0 6px;text-wrap:balance;letter-spacing:-.01em;
+  }
+  h2 .num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--oro);
+    display:block;letter-spacing:.14em;margin-bottom:9px;font-weight:500}
+  h3{font-family:"Spectral",Georgia,serif;font-weight:600;font-size:21px;margin:38px 0 10px;line-height:1.25}
+  h4{font-size:13px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--tinta2);margin:28px 0 10px}
+  p{margin:0 0 16px;max-width:680px}
+  .sub{color:var(--tinta2);font-size:15px}
+  strong{font-weight:600}
+  em{font-style:italic}
+  a{color:var(--azul)}
+
+  /* --------- ficha de texto: lo que se puede cambiar --------- */
+  .texto{
+    border-left:3px solid var(--oro);
+    background:var(--hoja);
+    padding:14px 18px;margin:0 0 14px;max-width:700px;
+    display:grid;gap:7px;
+  }
+  .texto .cod{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;
+    color:var(--tinta3);text-transform:uppercase;
+  }
+  .texto .donde{font-size:13px;color:var(--tinta2)}
+  .texto .frase{font-family:"Spectral",Georgia,serif;font-size:18px;line-height:1.5}
+  .texto .frase.chica{font-size:16px}
+  .texto ul{margin:4px 0 0;padding-left:20px;display:grid;gap:7px}
+  .texto li{font-family:"Spectral",Georgia,serif;font-size:16.5px;line-height:1.45}
+  .texto.grande .frase{font-size:21px}
+  .texto.propuesta{border-left-color:var(--tinta3);background:transparent;
+    border-top:1px dashed var(--linea);border-right:1px dashed var(--linea);border-bottom:1px dashed var(--linea)}
+
+  /* ---------------- tablas ---------------- */
+  .tabla{overflow-x:auto;margin:14px 0 22px;border-top:1px solid var(--tinta);border-bottom:1px solid var(--linea)}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}
+  th{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--tinta2);text-align:left;
+    padding:10px 14px 10px 0;border-bottom:1px solid var(--linea);vertical-align:bottom;
+  }
+  td{padding:11px 14px 11px 0;border-bottom:1px solid var(--linea);vertical-align:top;line-height:1.45}
+  tr:last-child td{border-bottom:none}
+  td.lugar{font-family:"Spectral",Georgia,serif;font-size:16px;white-space:nowrap}
+  td.proc{color:var(--oro);font-weight:500;white-space:nowrap}
+  .tabla.compacta td{font-size:14px}
+
+  /* ---------------- etapas ---------------- */
+  .etapas{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0 8px}
+  .etapa{background:var(--hoja2);border:1px solid var(--linea);padding:20px;display:grid;
+    gap:8px;align-content:start}
+  .etapa .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.14em;
+    color:var(--oro)}
+  .etapa h3{margin:0;font-size:23px}
+  .etapa .juego{font-size:13.5px;color:var(--tinta2);font-style:italic}
+  .etapa .equiv{font-size:14.5px;border-top:1px solid var(--linea);padding-top:9px;margin-top:3px}
+  .etapa .equiv b{display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--tinta3);font-weight:500;margin-bottom:3px}
+
+  .chip{display:inline-block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;
+    letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px}
+  .chip.listo{background:var(--verdeSuave);color:var(--verde)}
+  .chip.falta{background:var(--oroSuave);color:var(--oro)}
+  .chip.nuevo{background:var(--azulSuave);color:var(--azul)}
+
+  /* ---------------- objetos del camino ---------------- */
+  .objetos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;margin:22px 0}
+  .objeto{text-align:center;display:grid;gap:8px;justify-items:center}
+  .objeto img{width:100%;max-width:150px;height:auto}
+  .objeto b{font-family:"Spectral",Georgia,serif;font-size:16.5px;font-weight:600}
+  .objeto span{font-size:13.5px;color:var(--tinta2);line-height:1.4}
+
+  .estaciones{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin:22px 0}
+  .estacion{display:grid;gap:0;border:1px solid var(--linea);background:var(--hoja2)}
+  .estacion img{width:100%;height:150px;object-fit:cover;display:block}
+  .estacion .pie{padding:12px 14px;display:grid;gap:3px}
+  .estacion .pie b{font-family:"Spectral",Georgia,serif;font-size:17px}
+  .estacion .pie span{font-size:13px;color:var(--tinta2)}
+  .estacion .pie i{font-size:12.5px;color:var(--oro);font-style:normal;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:.05em}
+
+  figure{margin:22px 0}
+  figure img{width:100%;height:auto;border:1px solid var(--linea)}
+  figcaption{font-size:13px;color:var(--tinta2);margin-top:8px;max-width:640px}
+
+  .cita{
+    font-family:"Spectral",Georgia,serif;font-style:italic;font-size:clamp(20px,3vw,26px);
+    line-height:1.4;color:var(--tinta);border-top:2px solid var(--oro);
+    padding-top:18px;margin:32px 0;max-width:660px;
+  }
+  .nota{background:var(--hoja);border:1px solid var(--linea);padding:16px 18px;margin:22px 0;
+    font-size:14.5px;color:var(--tinta2);max-width:700px}
+  .nota b{color:var(--tinta)}
+  ul.lista{margin:0 0 18px;padding-left:20px;display:grid;gap:8px;max-width:680px}
+  ul.lista li{line-height:1.5}
+  ol.pasos{margin:0 0 18px;padding-left:22px;display:grid;gap:9px;max-width:680px}
+
+  .excusas{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 24px}
+  .excusas span{font-family:"Spectral",Georgia,serif;font-size:15.5px;font-style:italic;
+    border:1px solid var(--linea);background:var(--hoja);padding:7px 13px;border-radius:2px}
+
+  footer{padding-block:40px 10px;border-top:2px solid var(--tinta);margin-top:10px}
+
+  @media (max-width:720px){
+    .etapas{grid-template-columns:1fr}
+    header.portada{padding-block:36px 30px}
+    section{padding-block:36px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
+</style>
+
+<div class="envoltura">
+
+<nav class="barra" aria-label="Secciones">
+  <a class="marca" href="#arriba">Terra Incógnita</a>
+  <a href="#apuesta">La apuesta</a>
+  <a href="#recorrido">El recorrido</a>
+  <a href="#mapa">1 · El Mapa</a>
+  <a href="#camino">2 · El Camino</a>
+  <a href="#regreso">3 · El Regreso</a>
+  <a href="#ruta">Entre etapas</a>
+  <a href="#cierre">La revelación</a>
+  <a href="#vista">Cómo se ve</a>
+  <a href="#estado">Estado</a>
+</nav>
+
+<header class="portada" id="arriba">
+  <p class="eyebrow">Auditoría de Control Interno · Tour Conéctate</p>
+  <h1>Guion de Terra Incógnita</h1>
+  <p class="bajada">Todo lo que el visitante va a leer, oír y entender en el stand: los textos exactos,
+    las analogías y el mensaje de cada etapa. Está escrito para que se pueda cambiar.</p>
+  <dl class="meta">
+    <div><dt>Fecha</dt><dd>22 de septiembre de 2026</dd></div>
+    <div><dt>Para</dt><dd>Dirección de Auditoría</dd></div>
+    <div><dt>Duración del juego</dt><dd>10 a 12 minutos</dd></div>
+    <div><dt>Estado</dt><dd>Las tres etapas, jugables</dd></div>
+  </dl>
+</header>
+
+<section id="apuesta">
+  <h2><span class="num">01</span>La apuesta</h2>
+  <p>Una lámina que explique el Plan Anual de Auditoría no se recuerda. La sensación de tener
+    <strong>cinco equipos para catorce lugares</strong>, y que al final le digan cuál se le escapó y por
+    qué importaba, sí.</p>
+  <p>Por eso el orden está invertido: <strong>primero se ejerce la capacidad, después se le pone
+    nombre</strong>. El visitante juega sin que se le hable de auditoría, y al terminar cada etapa se le
+    revela qué acaba de hacer en la vida real.</p>
+
+  <div class="texto grande">
+    <span class="cod">INT-01 · Apertura, primera pantalla</span>
+    <span class="donde">Lo primero que se ve al tomar el mando</span>
+    <p class="frase">TERRA INCÓGNITA<br><em>Un recorrido por dentro de la compañía</em></p>
+    <p class="frase chica"><em>Así marcaban los mapas antiguos las zonas que nadie había recorrido.
+      No quería decir que no hubiera nada. Quería decir que nadie había ido a ver.</em></p>
+  </div>
+
+  <h3>La regla de oro</h3>
+  <p>Mientras se juega <strong>no aparece ni una palabra del oficio</strong>. Ni «auditoría», ni «riesgo
+    residual», ni «hallazgo», ni «control interno». Se nombran al final de cada etapa, cuando ya se
+    vivieron. Nombrar antes desarma el efecto.</p>
+  <p>La segunda regla la impuso la primera prueba con gente: <strong>vocabulario de pasillo</strong>. La
+    versión inicial decía «catalejo» y «paraje»; nadie sabía qué era eso. Hoy dice «linterna» y «lugar».</p>
+
+  <h4>Cómo se traduce cada concepto</h4>
+  <div class="tabla">
+    <table>
+      <thead><tr><th>En la vida real</th><th>En la pantalla</th></tr></thead>
+      <tbody>
+        <tr><td>Proceso de la compañía</td><td>Lugar</td></tr>
+        <tr><td>Universo auditable</td><td>El territorio, el mapa</td></tr>
+        <tr><td>Riesgo emergente</td><td>Un peligro que todavía no aparece en las señales</td></tr>
+        <tr><td>Materialidad, valor</td><td>Importancia, lo que está en juego</td></tr>
+        <tr><td>Indicador, dato anómalo</td><td>Señales</td></tr>
+        <tr><td>Auditar un proceso</td><td>Mandar un equipo</td></tr>
+        <tr><td>Recursos del área</td><td>Equipos disponibles</td></tr>
+        <tr><td>Plan anual</td><td>El mapa</td></tr>
+        <tr><td>Alcance</td><td>Hasta dónde llega la linterna</td></tr>
+        <tr><td>Información extraída de la base de datos</td><td>Datos crudos (◆ azul)</td></tr>
+        <tr><td>Analizar con Power BI, cruzar cifras</td><td>Analizar, la lente</td></tr>
+        <tr><td>Hallazgo</td><td>Algo escondido, un descubrimiento (◆ rojo)</td></tr>
+        <tr><td>Controles y manual del proceso</td><td>Carteles «✓ Todo en orden»</td></tr>
+        <tr><td>Resistencia del auditado</td><td>Muros con excusas</td></tr>
+        <tr><td>Recomendación y plan de acción</td><td>Lo que se lleva de vuelta</td></tr>
+        <tr><td>Seguimiento</td><td>Volver a ver que cambió</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="nota">
+    <b>Cómo pedir cambios.</b> Cada bloque de texto de esta página lleva un código
+    (<span style="font-family:'IBM Plex Mono',monospace">INT-01</span>,
+    <span style="font-family:'IBM Plex Mono',monospace">C-REV-05</span>…). Para cambiar una frase basta
+    con decir el código y la frase nueva; no hay que describir dónde está. Todo lo que aparece aquí ya está en el juego.
+  </div>
+</section>
+
+<section id="recorrido">
+  <h2><span class="num">02</span>El recorrido</h2>
+  <p>Tres juegos, uno detrás del otro. El primero se juega solo; los dos últimos, de a dos personas
+    compitiendo, que es lo que hace que la gente se acerque a mirar.</p>
+
+  <div class="etapas">
+    <article class="etapa">
+      <span class="n">ETAPA 1</span>
+      <h3>El Mapa</h3>
+      <span class="juego">Linterna con el movimiento del mando · 1 jugador · ~3 min</span>
+      <p class="equiv"><b>Equivale a</b>Plan Anual de Auditoría</p>
+      <span class="chip listo">Jugable</span>
+    </article>
+    <article class="etapa">
+      <span class="n">ETAPA 2</span>
+      <h3>El Camino</h3>
+      <span class="juego">Estilo Subway Surfers · 1 o 2 jugadores · ~2½ min</span>
+      <p class="equiv"><b>Equivale a</b>Ejecución con analítica de datos</p>
+      <span class="chip listo">Jugable</span>
+    </article>
+    <article class="etapa">
+      <span class="n">ETAPA 3</span>
+      <h3>El Regreso</h3>
+      <span class="juego">Estilo Flappy Bird · 1 o 2 jugadores · ~2 min</span>
+      <p class="equiv"><b>Equivale a</b>Informe, recomendaciones y seguimiento</p>
+      <span class="chip listo">Jugable</span>
+    </article>
+  </div>
+
+  <p class="sub">La Etapa 1 fue aprobada por la Dirección el 21 de septiembre. Las Etapas 2 y 3 quedaron
+    jugables el 22; la 2 ya se probó con los dos mandos y la 3 está recién terminada. Entre una etapa y
+    otra se ve el recorrido completo, con un ✓ sobre la que acaba de terminar.</p>
+</section>
+
+<section id="mapa">
+  <h2><span class="num">ETAPA 1</span>El Mapa</h2>
+  <p><strong>Lo que se juega:</strong> un territorio a oscuras, una linterna que alcanza poco, sesenta
+    segundos y <strong>cinco equipos para catorce lugares</strong>. Mover el mando ilumina; detenerse
+    sobre un lugar lo revela.</p>
+  <p><strong>Lo que enseña:</strong> que no se puede ir a todas partes, y que elegir a dónde ir es el
+    trabajo. Eso es el Plan Anual.</p>
+
+  <h3>Las instrucciones, tal como aparecen</h3>
+
+  <div class="texto">
+    <span class="cod">M-B1 · Instrucciones, primera parte</span>
+    <span class="donde">Pantalla previa a explorar</span>
+    <p class="frase"><strong>Explora el mapa.</strong> Tienes delante el territorio de toda la compañía.
+      Está a oscuras y nadie lo ha recorrido completo.</p>
+    <ul>
+      <li>Mueve el Joy-Con como si tuvieras una linterna en la mano: donde apuntes, se ilumina el mapa.</li>
+      <li>Cuando pases por encima de un lugar, detente un momento sobre él. Si te quedas quieto ahí, el
+        lugar se revela y te muestra su información.</li>
+      <li>Hay 14 lugares en total. Recórrelo todo: también las orillas y las esquinas. No todo está en
+        el centro.</li>
+    </ul>
+    <p class="frase chica">Tienes 60 segundos. No te va a alcanzar para mirarlo todo con calma: por eso
+      importa cómo lo recorres.</p>
+  </div>
+
+  <div class="texto">
+    <span class="cod">M-B2 · Instrucciones, segunda parte</span>
+    <span class="donde">Pantalla previa a decidir</span>
+    <p class="frase"><strong>Decide a dónde ir.</strong> Ya viste lo que alcanzaste a ver. Ahora hay que
+      escoger, y no alcanza para todos.</p>
+    <ul>
+      <li>Tienes 5 equipos para 14 lugares. Solo puedes enviarlos a lugares que hayas descubierto.</li>
+      <li>Apunta a un lugar y te aparece una ficha con lo que hay ahí y sus tres barras. Léela antes de decidir.</li>
+      <li>Confirma para enviar un equipo. Vuelve a confirmar sobre él si quieres retirarlo.</li>
+      <li>El orden en que los envías es tu prioridad: el primero es el más urgente.</li>
+      <li>Cuando estés conforme, apunta al botón «Enviar equipos» de abajo y confirma. No tienes que
+        gastar todo el tiempo ni usar los cinco.</li>
+    </ul>
+    <p class="frase chica">Fíjate sobre todo en el riesgo y en la importancia: las señales ayudan, pero un
+      lugar puede estar en peligro sin que los datos lo estén gritando.</p>
+  </div>
+
+  <h3>Los catorce lugares y su proceso</h3>
+  <p>Cada nombre es un guiño. Durante el juego solo se ve el nombre del lugar y una pista; el proceso real
+    aparece al final de la etapa, junto con lo que el equipo va a revisar allí.</p>
+
+  <div class="tabla">
+    <table>
+      <thead><tr><th>Lugar</th><th>Es…</th><th>Qué se revisa ahí (se dice al final de la etapa)</th></tr></thead>
+      <tbody>
+        <tr><td class="lugar">El Gran Caudal</td><td class="proc">Facturación</td><td>Que a cada quien se le cobre lo que consumió: ni un peso de más, ni uno de menos.</td></tr>
+        <tr><td class="lugar">La Represa</td><td class="proc">Recaudo y cartera</td><td>Lo que se cobró, lo que sigue pendiente, y qué se está haciendo para recuperarlo.</td></tr>
+        <tr><td class="lugar">El Manantial</td><td class="proc">Compra y venta de gas</td><td>Los contratos de suministro: cuánto se compra, a qué precio, y si eso le conviene a la compañía.</td></tr>
+        <tr><td class="lugar">La Montaña Perdida</td><td class="proc">Pérdida No Operacional</td><td>A dónde se va el gas que sale y no llega. Cuánto es pérdida técnica y cuánto es otra cosa.</td></tr>
+        <tr><td class="lugar">Los Grandes Hornos</td><td class="proc">Gran Industria</td><td>La medición y la facturación de los clientes grandes, donde un error pequeño es mucha plata.</td></tr>
+        <tr><td class="lugar">Los Ramales</td><td class="proc">Construcciones e Ingeniería</td><td>Que las obras se hagan bien y a tiempo, y que lo que se pagó sea lo que se construyó.</td></tr>
+        <tr><td class="lugar">El Puente Viejo</td><td class="proc">Mantenimiento de infraestructura</td><td>El estado real de la infraestructura, y si el mantenimiento se está haciendo o solo se está reportando.</td></tr>
+        <tr><td class="lugar">La Fundición</td><td class="proc">Compras y contratación</td><td>Cómo se eligen los proveedores y si los contratos se cumplen como se firmaron.</td></tr>
+        <tr><td class="lugar">La Torre de Señales</td><td class="proc">Dirección Digital</td><td>Quién puede entrar a los sistemas, qué puede hacer adentro, y qué pasaría si alguien se cuela.</td></tr>
+        <tr><td class="lugar">El Faro</td><td class="proc">Atención a usuarios</td><td>Qué están reclamando los usuarios, si se les resuelve, y qué nos está diciendo eso.</td></tr>
+        <tr><td class="lugar">Las Salinas</td><td class="proc">Tarifas y subsidios</td><td>Que las tarifas se apliquen como manda la regulación y que el subsidio llegue a quien debe.</td></tr>
+        <tr><td class="lugar">Los Acantilados</td><td class="proc">Seguridad y salud en el trabajo</td><td>Que la gente que trabaja en campo vuelva a su casa igual que salió.</td></tr>
+        <tr><td class="lugar">El Poblado</td><td class="proc">Gestión Humana</td><td>Cómo se contrata, cómo se paga y cómo se cuida a la gente.</td></tr>
+        <tr><td class="lugar">La Isla Brillante</td><td class="proc">Brilla</td><td>Cómo se otorgan los créditos, cómo se recuperan, y quién responde cuando no se pagan.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Las dos trampas, puestas a propósito</h3>
+  <p>Quien persigue solo la barra de señales —los datos que ya están gritando— pierde las dos. Está
+    medido: saca 40 sobre 100 en criterio.</p>
+
+  <div class="texto">
+    <span class="cod">M-TR1 · El Puente Viejo, al final de la etapa</span>
+    <span class="donde">Aparece si se le escapó</span>
+    <p class="frase">Aguanta desde hace años y por eso nadie lo mira. Casi no da señales. Su peligro
+      todavía no está en los datos: está en el tiempo.</p>
+    <p class="frase chica">Aquí está la trampa. Riesgo alto, señales casi en cero. Si solo mirabas la
+      barra azul, lo dejaste pasar. Los datos avisan de lo que ya pasó; no de lo que se está gastando
+      en silencio.</p>
+  </div>
+
+  <div class="texto">
+    <span class="cod">M-TR2 · La Isla Brillante</span>
+    <span class="donde">Está fuera del mapa: hay que salirse de tierra firme para encontrarla</span>
+    <p class="frase">Está lejos de tierra firme y no se parece a nada del resto del mapa. Casi nadie llega
+      hasta acá — y sin embargo se mueve mucho dinero.</p>
+    <p class="frase chica">Lo que una compañía no revisa porque «no es lo nuestro» suele ser justo lo que
+      menos control tiene.</p>
+  </div>
+
+  <h3>Cómo cierra la etapa</h3>
+  <p>El resultado se muestra por páginas, para que nada se amontone: tres notas sobre cien
+    (<strong>miraste</strong>, <strong>elegiste bien</strong>, <strong>priorizaste</strong>), a dónde
+    envió cada equipo y con qué criterio, y qué se le escapó. Y después, el aterrizaje: la pantalla que
+    traduce la etapa y le pone su nombre real.</p>
+
+  <div class="texto grande">
+    <span class="cod">M-REV · Revelación de la etapa: «Así elegimos»</span>
+    <span class="donde">La última pantalla de la Etapa 1. Llega en tres tiempos: lo que hizo, la traducción,
+      y el nombre</span>
+    <p class="frase"><em>Miraste toda la compañía: catorce lugares, y cada uno le importa a alguien. No
+      alcanzaba para todos. Leíste lo que había en cada uno, escogiste los que más pesaban y decidiste a
+      cuáles ir primero.</em></p>
+    <ul>
+      <li><strong>La linterna</strong> — El alcance: lo que un equipo pequeño alcanza a mirar en un año.
+        Nunca da para toda la compañía, y ese es el punto de partida.</li>
+      <li><strong>Los catorce lugares</strong> — Los procesos de la compañía, todos: facturación, recaudo,
+        compras, mantenimiento, Brilla… los que acabas de recorrer con otro nombre.</li>
+      <li><strong>Las tres barras</strong> — Riesgo, importancia y señales. Con eso se decide, y los datos
+        son solo una de las tres: un proceso puede estar en peligro sin que nada lo esté gritando.</li>
+      <li><strong>Los cinco equipos</strong> — Las auditorías que caben en el año. Escoger a dónde van es
+        decir que no a los otros nueve, y hay que poder sustentarlo.</li>
+      <li><strong>El orden</strong> — La prioridad. No es lo mismo llegar en enero que en noviembre: a lo
+        más crítico se va primero.</li>
+      <li><strong>Lo que se te escapó</strong> — También nos pasa. Por eso el plan se revisa: si aparece
+        algo nuevo a mitad de año, se cambia.</li>
+    </ul>
+    <p class="frase" style="color:var(--oro)"><strong>Eso es el Plan Anual de Auditoría.</strong></p>
+    <p class="frase chica">Es la decisión más importante del año del área: define qué se revisa, en qué
+      orden y qué queda por fuera. Se sustenta ante la Dirección, y de ahí sale el trabajo de los doce
+      meses.</p>
+  </div>
+
+  <div class="texto">
+    <span class="cod">M-FIN · Frases de cierre de la etapa</span>
+    <span class="donde">Según cómo le haya ido</span>
+    <p class="frase">Esto es lo que acabas de mandar a revisar, y en este orden.</p>
+    <p class="frase chica">Miraste lo suficiente y elegiste bien. Eso es exactamente lo difícil.</p>
+    <p class="frase chica">No recorriste todo el territorio. Nadie puede. Elegiste dónde mirar.</p>
+  </div>
+</section>
+
+<section id="camino">
+  <h2><span class="num">ETAPA 2</span>El Camino</h2>
+  <p><strong>Lo que se juega:</strong> los equipos ya llegaron. Ahora hay que recorrer el proceso completo
+    por la cadena del gas, recogiendo datos y analizándolos para que aparezca lo que está escondido.
+    Setenta segundos, tres carriles, dos jugadores compitiendo en el mismo camino.</p>
+  <p><strong>Lo que enseña:</strong> que la información se saca de la fuente, que analizarla es lo que
+    hace visible lo invisible, y que los controles y el manual —los carteles de «todo en orden»— casi
+    nunca son donde está el problema.</p>
+
+  <div class="objetos">
+    <div class="objeto">
+      <img src="img/obj-dato.png" alt="Gema azul que representa un dato crudo">
+      <b>Los datos crudos</b>
+      <span>Se recogen corriendo por encima. Abundan en el carril cómodo del centro.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/obj-lente.png" alt="Lupa azul con un gráfico de barras dentro">
+      <b>Analizar</b>
+      <span>El gatillo gasta datos y hace visible lo escondido. Sin datos no hay análisis.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/obj-oculto.png" alt="Cristal rojo que representa algo escondido">
+      <b>Lo escondido</b>
+      <span>Invisible hasta que se analiza. Casi siempre fuera del carril del centro.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/obj-control.png" alt="Letrero verde con un visto bueno">
+      <b>«Todo en orden»</b>
+      <span>Los controles y el manual. Brillan, suman poco y nunca esconden nada.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/obj-muro.png" alt="Barrera de obra con un cartel en blanco">
+      <b>Las excusas</b>
+      <span>Muros con una frase escrita. Chocar cuesta datos y frena.</span>
+    </div>
+  </div>
+
+  <h3>Las instrucciones, tal como aparecen</h3>
+  <div class="texto">
+    <span class="cod">C-B1 · Instrucciones de la etapa</span>
+    <span class="donde">Pantalla previa a la carrera</span>
+    <p class="frase"><strong>Recorre el proceso de principio a fin.</strong> Tus equipos llegaron. Ahora
+      hay que caminar todo el proceso: desde donde entra el gas hasta donde llega la plata, y ver con tus
+      propios ojos qué pasa en cada tramo.</p>
+    <ul>
+      <li>Apunta el Joy-Con hacia un carril para moverte: izquierda, centro o derecha.</li>
+      <li>Recoge los ◆ azules: son los datos tal como salen de la fuente.</li>
+      <li>Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino.
+        Lo que brille en rojo, atrápalo.</li>
+      <li>Los carteles «✓ Todo en orden» suman poco. Esquiva los muros: son las excusas de siempre, y te
+        hacen perder datos.</li>
+    </ul>
+    <p class="frase chica">Pueden jugar dos, en el mismo camino. Gana quien encuentre más de lo que estaba
+      escondido.</p>
+  </div>
+
+  <h3>La cadena del gas, que es el recorrido</h3>
+  <p>Las cinco estaciones son lugares que el visitante ya conoce del mapa. Recorrerlas en orden
+    <em>es</em> entender el proceso de principio a fin.</p>
+
+  <div class="estaciones">
+    <figure class="estacion"><img src="img/est-manantial.jpg" alt="Tanques y válvulas junto a un río">
+      <figcaption class="pie"><b>El Manantial</b><span>donde entra el gas</span><i>Compra y venta de gas</i></figcaption></figure>
+    <figure class="estacion"><img src="img/est-ramales.jpg" alt="Tuberías amarillas ramificándose en una obra">
+      <figcaption class="pie"><b>Los Ramales</b><span>por donde se reparte</span><i>Construcciones e Ingeniería</i></figcaption></figure>
+    <figure class="estacion"><img src="img/est-montana.jpg" alt="Montaña con niebla y tuberías que desaparecen">
+      <figcaption class="pie"><b>La Montaña Perdida</b><span>donde algo se pierde</span><i>Pérdida No Operacional</i></figcaption></figure>
+    <figure class="estacion"><img src="img/est-caudal.jpg" alt="Calle caribeña con medidores de gas en las fachadas">
+      <figcaption class="pie"><b>El Gran Caudal</b><span>donde se mide y se cobra</span><i>Facturación</i></figcaption></figure>
+    <figure class="estacion"><img src="img/est-represa.jpg" alt="Represa con compuertas abiertas">
+      <figcaption class="pie"><b>La Represa</b><span>donde llega la plata</span><i>Recaudo y cartera</i></figcaption></figure>
+  </div>
+
+  <h4>Lo que se dice en pantalla mientras se juega</h4>
+  <div class="texto">
+    <span class="cod">C-JUEGO · Avisos durante la carrera</span>
+    <span class="donde">Aparecen un segundo y se van</span>
+    <ul>
+      <li>¡Encontraste algo escondido!</li>
+      <li>✓ Según el manual, todo en orden</li>
+      <li>Sin datos no hay nada que analizar</li>
+      <li>«Pídelo por correo» <span class="sub">— al chocar, se repite la excusa del muro</span></li>
+    </ul>
+  </div>
+
+  <h4>Las excusas de los muros</h4>
+  <p>Ocho frases que todo el mundo en la compañía ha oído alguna vez. Es el guiño que hace reír, y de paso
+    dice algo cierto sobre el trabajo.</p>
+  <div class="excusas">
+    <span>«Siempre se ha hecho así»</span>
+    <span>«Pídelo por correo»</span>
+    <span>«Ese dato no existe»</span>
+    <span>«Eso no está en el manual»</span>
+    <span>«Ya lo revisaron el año pasado»</span>
+    <span>«No es mi área»</span>
+    <span>«El sistema no deja»</span>
+    <span>«Eso siempre cuadra»</span>
+  </div>
+
+  <h3>El tablero final</h3>
+  <p>Al llegar a la meta se muestra, estación por estación, <strong>lo que encontró frente a todo lo que
+    había escondido</strong>. Es el momento que representa el análisis en Power BI: recién ahí se ve
+    completo lo que durante el camino estaba invisible.</p>
+  <div class="texto">
+    <span class="cod">C-TAB · Líneas del tablero</span>
+    <span class="donde">Debajo del marcador grande de descubrimientos</span>
+    <ul>
+      <li>◆ 73 datos recogidos · analizaste 14 veces</li>
+      <li>✓ 6 carteles «todo en orden»: ninguno escondía nada</li>
+      <li>Chocaste 3 veces con una excusa</li>
+      <li>4 cosas escondidas pasaron a tu lado sin que las atraparas</li>
+      <li>Pasaste el 61 % del camino por el carril del centro</li>
+    </ul>
+  </div>
+
+  <h3>La revelación: «Así trabajamos»</h3>
+  <p>Aquí, por primera vez en la etapa, se nombra el oficio. Es la pantalla más importante del juego:
+    la que convierte una carrera en un mensaje sobre el área.</p>
+
+  <div class="tabla">
+    <table>
+      <thead><tr><th>Código</th><th>En el juego</th><th>En la vida real</th></tr></thead>
+      <tbody>
+        <tr><td class="proc">C-REV-01</td><td class="lugar">◆ Los datos crudos</td><td>Sacamos la información directo de la base de datos, no de lo que el proceso reporta de sí mismo.</td></tr>
+        <tr><td class="proc">C-REV-02</td><td class="lugar">La lente</td><td>La analizamos con herramientas como Power BI y cruzamos las cifras del proceso con las nuestras.</td></tr>
+        <tr><td class="proc">C-REV-03</td><td class="lugar">✓ Los carteles</td><td>Revisamos los controles y el manual… pero lo que importa casi nunca está ahí.</td></tr>
+        <tr><td class="proc">C-REV-04</td><td class="lugar">El camino completo</td><td>Recorremos el proceso de principio a fin: desde donde entra el gas hasta donde llega la plata.</td></tr>
+        <tr><td class="proc">C-REV-05</td><td class="lugar">Lo que brilló en rojo</td><td>Se llama HALLAZGO: lo escondido, lo que nadie estaba viendo. Con él se construyen las conclusiones.</td></tr>
+        <tr><td class="proc">C-REV-06</td><td class="lugar">Los muros</td><td>Y sí: siempre aparece una excusa en el camino.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="cita">No nos quedamos con lo que el proceso dice de sí mismo. Vamos a ver.</p>
+
+  <div class="nota">
+    <b>La lección está medida, no supuesta.</b> Se simularon 60 carreras con tres formas de jugar.
+    Quien se queda en el carril del centro y no analiza encuentra <b>0 de 14</b>. Quien persigue los
+    carteles «✓ todo en orden» revisa 24 controles y también encuentra <b>0 de 14</b>. Quien recoge
+    datos, analiza y se sale del camino cómodo encuentra casi todo. Si algún ajuste rompiera eso, las
+    pruebas automáticas lo avisan antes de que llegue al stand.
+  </div>
+</section>
+
+<section id="regreso">
+  <h2><span class="num">ETAPA 3</span>El Regreso</h2>
+  <p><span class="chip listo">Jugable</span></p>
+  <p><strong>Lo que se juega:</strong> un Flappy Bird. Una <strong>paloma mensajera</strong> lleva de
+    vuelta lo que se encontró en el camino; cada pulsación del gatillo bate las alas. Sesenta segundos,
+    los dos jugadores en el mismo cielo.</p>
+  <p><strong>Lo que enseña:</strong> que encontrar no basta. Hay que contarlo, recomendar qué hacer y
+    volver meses después a verificar que se hizo. No es difícil: es insistente. Siempre hay una columna
+    más, y ese cansancio <em>es</em> el mensaje.</p>
+
+  <h4>Qué representa cada cosa</h4>
+  <div class="tabla compacta">
+    <table>
+      <thead><tr><th>En el vuelo</th><th>Qué es</th></tr></thead>
+      <tbody>
+        <tr><td class="lugar">Los sobres que lleva la paloma</td><td>El informe: tantos sobres como hallazgos trajo de El Camino, más tres de base. Quien más encontró, más tiene que entregar.</td></tr>
+        <tr><td class="lugar">Los aros dorados</td><td>Las recomendaciones y los planes de acción: atravesarlos entrega un sobre.</td></tr>
+        <tr><td class="lugar">Los puestos de control</td><td>El seguimiento: volver a pasar y verificar que el plan se cumplió.</td></tr>
+        <tr><td class="lugar">Las columnas con una frase</td><td>Las excusas del seguimiento, las que aparecen meses después.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="texto">
+    <span class="cod">R-B1 · Instrucciones de la etapa</span>
+    <span class="donde">Pantalla previa al vuelo</span>
+    <p class="frase"><strong>Llévalo de vuelta.</strong> Encontraste lo que nadie estaba viendo. Ahora hay
+      que contarlo, y eso es otro viaje: todo el mundo tiene una razón para dejarlo para después.</p>
+    <ul>
+      <li>Pulsa el gatillo para batir las alas. Nada más.</li>
+      <li>Atraviesa los aros dorados: cada uno entrega algo de lo que traes.</li>
+      <li>Pasa por los puestos de control: son la vuelta a verificar que sí cambió.</li>
+      <li>Las columnas son las excusas. Chocar no te saca del juego, pero te hace perder algo de lo que
+        llevabas.</li>
+    </ul>
+  </div>
+
+  <div class="texto">
+    <span class="cod">R-EXC · Las excusas del seguimiento</span>
+    <span class="donde">Escritas en las columnas</span>
+    <ul>
+      <li>«Ya está resuelto»</li>
+      <li>«No hubo presupuesto»</li>
+      <li>«Cambió el responsable»</li>
+      <li>«Lo vemos el otro trimestre»</li>
+      <li>«Estamos en cierre de mes»</li>
+      <li>«Eso ya lo sabíamos»</li>
+    </ul>
+  </div>
+
+  <div class="texto">
+    <span class="cod">R-REV · Revelación de la etapa</span>
+    <span class="donde">Al terminar el vuelo</span>
+    <ul>
+      <li><strong>Los sobres</strong> — El informe con los hallazgos. Sin él, nada de lo que encontramos existe para la compañía.</li>
+      <li><strong>Los aros</strong> — Las recomendaciones: lo que proponemos hacer, acordado con el proceso.</li>
+      <li><strong>Los puestos de control</strong> — El seguimiento a los planes de acción: volvemos a mirar, con fecha y responsable.</li>
+      <li><strong>Las columnas</strong> — Y sí: meses después siempre hay una razón para no haberlo hecho todavía.</li>
+    </ul>
+  </div>
+
+  <p class="cita">Un hallazgo que nadie verifica es una anécdota.</p>
+</section>
+
+<section id="ruta">
+  <h2><span class="num">03</span>Entre una etapa y otra</h2>
+  <p><span class="chip listo">Jugable</span></p>
+  <p>Al terminar cada etapa se vuelve a una vista con las tres paradas del recorrido: la que acaba de
+    terminar recibe su <strong>✓</strong>, el sendero se ilumina hasta la siguiente y se entra en ella.
+    Sirve para dos cosas: que el visitante sepa cuánto lleva y cuánto falta, y que el recorrido se vea
+    como uno solo y no como tres juegos sueltos.</p>
+
+  <div class="texto">
+    <span class="cod">RUT · Lo que dice cada parada</span>
+    <span class="donde">Sin nombrar el oficio: esta pantalla se ve mientras se juega</span>
+    <ul>
+      <li><strong>1 · El Mapa</strong> — Elige a dónde ir.</li>
+      <li><strong>2 · El Camino</strong> — Encuentra lo que está escondido.</li>
+      <li><strong>3 · El Regreso</strong> — Llévalo de vuelta y verifica.</li>
+    </ul>
+    <p class="donde">Y arriba, según por dónde vaya: «Tres tramos. Empecemos por el primero.» ·
+      «Un tramo menos. Queda camino.» · «Recorriste los tres tramos.»</p>
+  </div>
+</section>
+
+<section id="cierre">
+  <h2><span class="num">04</span>La revelación final</h2>
+  <p>Tres páginas, al terminar el recorrido completo. Es el único momento donde se dice todo.</p>
+
+  <div class="texto grande">
+    <span class="cod">FIN-01 · Página primera</span>
+    <span class="donde">Lo que acaba de hacer, y su nombre</span>
+    <p class="frase"><em>Primero miraste todo el territorio y decidiste a dónde ir. Después fuiste a la
+      fuente, recorriste el proceso de principio a fin y encontraste lo que nadie estaba viendo.</em></p>
+    <p class="frase" style="color:var(--oro)"><strong>Eso es Auditoría Interna.</strong></p>
+    <ul>
+      <li>El Mapa → Plan Anual de Auditoría</li>
+      <li>El Camino → Ejecución con analítica de datos</li>
+      <li>El Regreso → Informe, recomendaciones y seguimiento</li>
+    </ul>
+    <p class="frase chica">No nos limitamos a probar los controles ni a seguir el manual: entendemos el
+      proceso completo para encontrar lo invisible. Así es como generamos valor.</p>
+  </div>
+
+  <div class="texto">
+    <span class="cod">FIN-02 · Página segunda</span>
+    <span class="donde">La Isla Brillante, la encuentre o no</span>
+    <p class="frase chica">Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa.
+      Es el negocio que no se parece al resto del territorio.</p>
+    <p class="frase">Lo que una compañía no revisa porque «no es lo nuestro» suele ser justo lo que menos
+      control tiene.</p>
+  </div>
+
+  <div class="texto">
+    <span class="cod">FIN-03 · Página tercera</span>
+    <span class="donde">El recorrido completo y el cierre</span>
+    <p class="frase chica">Jugaste 3 de las 3 etapas. Así se ve el camino completo.</p>
+    <p class="frase">Esto es lo que hacemos. Todos los años, en toda la compañía.</p>
+  </div>
+</section>
+
+<section id="vista">
+  <h2><span class="num">05</span>Cómo se ve</h2>
+  <p><strong>El Camino ya se juega en 3D.</strong> Cámara detrás del explorador, tuberías amarillas de gas
+    entre los carriles, casas caribeñas y palmeras a los lados, y un paisaje distinto en cada tramo del
+    proceso. Estas son capturas del juego, no ilustraciones:</p>
+
+  <figure>
+    <img src="img/juego-camino-3d.jpg" alt="El Camino en 3D: el explorador corre entre casas de colores y tuberías amarillas">
+    <figcaption>El Gran Caudal, donde se mide y se cobra: los medidores de gas en las fachadas. Los rombos
+      azules son los datos crudos; la barrera roja y blanca, una excusa.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/juego-camino-3d-2j.jpg" alt="El Camino a pantalla partida con dos jugadores">
+    <figcaption>Dos jugadores corren el mismo camino, cada uno en su mitad. Lo escondido puede aparecerle a
+      uno y no al otro: depende de quién analice.</figcaption>
+  </figure>
+
+  <div class="objetos" style="margin-top:6px">
+    <div class="objeto">
+      <img src="img/camino-explorador-guia.jpg" alt="Explorador con casco amarillo, chaleco naranja y mochila, en tres vistas" style="max-width:100%">
+      <b>El explorador</b>
+      <span>Casco, chaleco y mochila: el que va a ver. El segundo jugador lleva casco blanco.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/fig-palmera.png" alt="Palmera">
+      <b>El Caribe, no un metro</b>
+      <span>Palmeras, casas de colores y sol: es Barranquilla, no una ciudad cualquiera.</span>
+    </div>
+    <div class="objeto">
+      <img src="img/tex-fachada-caribe-1.jpg" alt="Fachada turquesa con ventana y puerta">
+      <b>Las casas del camino</b>
+      <span>Las fachadas que pasan a los lados mientras se corre.</span>
+    </div>
+  </div>
+
+  <ul class="lista">
+    <li>El explorador se ve correr, con casco y chaleco; el del Jugador 2 lleva casco blanco.</li>
+    <li>Entre los carriles corren <strong>tuberías amarillas de gas</strong>: lo que cualquiera de la
+      compañía reconoce al instante.</li>
+    <li>Cada estación cambia de paisaje y de color del aire, para que se note que se avanza por el proceso.</li>
+    <li>Al analizar, una onda recorre el camino y lo escondido emerge del suelo con una columna de luz
+      roja: la idea de «analizar» se ve, no se lee.</li>
+    <li>Si el computador del stand no diera para el 3D, la etapa vuelve sola a la versión sencilla sin
+      cortar la partida. Nadie se queda a medias.</li>
+  </ul>
+</section>
+
+<section id="estado">
+  <h2><span class="num">06</span>Estado y qué falta</h2>
+
+  <div class="tabla">
+    <table>
+      <thead><tr><th>Qué</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>Etapa 1 · El Mapa</td><td><span class="chip listo">Jugable y probada</span></td></tr>
+        <tr><td>Etapa 2 · El Camino</td><td><span class="chip listo">Jugable y probada con dos mandos</span></td></tr>
+        <tr><td>Pantalla entre etapas</td><td><span class="chip listo">Jugable</span></td></tr>
+        <tr><td>Etapa 3 · El Regreso</td><td><span class="chip listo">Jugable</span></td></tr>
+        <tr><td>El Camino en 3D</td><td><span class="chip listo">Construido</span></td></tr>
+        <tr><td>Módulo de mandos (batería, relevo, dos jugadores)</td><td><span class="chip listo">Terminado</span></td></tr>
+        <tr><td>Guion y documentación</td><td><span class="chip listo">Al día</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Cosas que ya no se van a mover</h4>
+  <ul class="lista">
+    <li>El recorrido son <strong>tres etapas</strong>, no seis: menos etapas y más jugables.</li>
+    <li>Las dos últimas se juegan <strong>de a dos</strong>, para que el stand tenga público.</li>
+    <li>Ninguna etapa se puede perder. Hay resultados mejores y peores, y un cierre que explica la
+      diferencia: nadie queda mal delante de sus compañeros.</li>
+    <li>Todo funciona sin internet y sin instalar nada: si la red del evento falla, el juego sigue.</li>
+  </ul>
+
+  <h4>Lo que sí está a tiempo de cambiar</h4>
+  <ul class="lista">
+    <li>Cualquier frase de esta página: basta con citar su código.</li>
+    <li>La dificultad del vuelo de la Etapa 3, que todavía no se ha probado con gente.</li>
+    <li>Los textos de la Etapa 3 y de la pantalla entre etapas: están construidos, pero cambiar una
+      frase es cosa de minutos.</li>
+    <li>Los nombres de los lugares, si alguno se presta a confusión con un área.</li>
+  </ul>
+</section>
+
+<footer>
+  <p class="sub" style="max-width:640px">Terra Incógnita · Auditoría de Control Interno · Gases del Caribe.
+    Este guion se actualiza junto con el juego: lo que aquí dice es lo que el visitante va a leer en el
+    stand.</p>
+</footer>
+
+</div>

@@ -1,0 +1,10 @@
+{
+  "name": "terra-incognita",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Experiencia interactiva con Joy-Con para el Tour Conectate — Auditoria Interna, Gases del Caribe.",
+  "scripts": {
+    "start": "python servidor.py"
+  }
+}

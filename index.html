@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terra Incógnita</title>
+<style>
+  :root{
+    --fondo:#05070c; --tinta:#e8d9b5; --tenue:#8b9099; --debil:#5a6068;
+    --oro:#d9a441; --linea:rgba(217,164,65,.22);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--fondo); color:var(--tinta); overflow:hidden;
+    font:14px/1.5 "Segoe UI",system-ui,sans-serif;
+    cursor:default;
+  }
+  body.jugando{cursor:none}
+  /* El lienzo 3D va DEBAJO del de siempre: la pista y el personaje se pintan
+     con WebGL, y encima sigue el 2D con marcadores, avisos y pantallas. Solo
+     se muestra cuando la Etapa 2 consigue arrancar el 3D. */
+  #lienzo3d{position:fixed;inset:0;display:none;width:100vw;height:100vh;z-index:0}
+  #lienzo{position:relative;display:block;width:100vw;height:100vh;z-index:1}
+
+  /* ---------- capa de enlace ---------- */
+  #enlace{
+    position:fixed; inset:0; z-index:10; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:22px; text-align:center;
+    background:radial-gradient(ellipse at center,#0a1018 0%,#05070c 70%); padding:40px;
+  }
+  #enlace.oculto{display:none}
+  #enlace h1{
+    font:400 54px/1.1 Georgia,"Times New Roman",serif; margin:0; letter-spacing:1px;
+  }
+  #enlace .sub{font:italic 17px Georgia,serif; color:var(--oro); margin:-8px 0 6px}
+  #enlace p{max-width:560px; color:var(--tenue); margin:0; font-size:14px; line-height:1.75}
+  .fila{display:flex; gap:12px; align-items:center; margin-top:8px}
+  button{
+    background:transparent; color:var(--tinta); border:1px solid var(--linea);
+    padding:12px 24px; border-radius:8px; cursor:pointer; font:inherit; font-size:14px;
+    transition:border-color .15s,color .15s,background .15s;
+  }
+  button:hover{border-color:var(--oro); color:var(--oro)}
+  button.principal{background:var(--oro); border-color:var(--oro); color:#06080d; font-weight:600}
+  button.principal:hover{filter:brightness(1.12); color:#06080d}
+  .aviso{color:#e0614a; font-size:13px; max-width:560px; min-height:20px}
+  .pista{color:var(--debil); font-size:12px}
+  kbd{
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    border-radius:4px; padding:1px 6px; font-family:Consolas,monospace; font-size:11px;
+  }
+
+  .oculto{display:none !important}
+
+  /* ---------- panel del operador (F9) ---------- */
+  #panelMandos{
+    position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:rgba(3,5,9,.72); padding:28px; cursor:default;
+  }
+  .pm-caja{
+    width:min(640px,100%); max-height:92vh; overflow-y:auto;
+    background:#0e1620; border:1px solid var(--linea); border-radius:14px; padding:20px 22px;
+    box-shadow:0 24px 70px rgba(0,0,0,.6);
+  }
+  .pm-caja::-webkit-scrollbar{width:8px}
+  .pm-caja::-webkit-scrollbar-thumb{background:#262a38;border-radius:4px}
+  .pm-caja header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .pm-caja header b{font:400 21px Georgia,serif;letter-spacing:.5px}
+  .pm-cerrar{font-size:11px;color:var(--debil);font-family:Consolas,monospace}
+
+  .pm-fila{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;
+    background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:10px;
+  }
+  .pm-fila.activa{border-color:rgba(217,164,65,.45);background:rgba(217,164,65,.07)}
+  .pm-punto{width:9px;height:9px;border-radius:50%;background:#3a4150;flex:none}
+  .pm-punto.on{background:#4ade80;box-shadow:0 0 8px #4ade80}
+  .pm-info{flex:1;min-width:0}
+  .pm-linea1{display:flex;align-items:baseline;gap:10px}
+  .pm-linea1 b{font-size:14px}
+  .pm-estado{font:10px Consolas,monospace;color:var(--debil);letter-spacing:1px}
+  .pm-linea2{display:flex;align-items:center;gap:10px;margin-top:4px;font-size:12px;flex-wrap:wrap}
+  .pm-pips{display:inline-flex;gap:2px}
+  .pm-pips i{width:12px;height:6px;border-radius:2px;display:block}
+  .pm-tenue{color:var(--debil);font-size:11px}
+  .pm-botones{display:flex;gap:6px;flex:none}
+
+  .pm-accion{padding:6px 11px;border-radius:7px;font-size:12px;background:transparent}
+  .pm-accion.principal{background:var(--oro);border-color:var(--oro);color:#06080d;font-weight:600}
+  .pm-accion.principal:hover{filter:brightness(1.12);color:#06080d}
+  .pm-sync{width:100%;margin:6px 0 4px;padding:10px;border-style:dashed}
+  .pm-dos{width:100%;margin:0 0 4px;padding:10px}
+  .pm-jugadores{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .pm-jugador{
+    padding:14px;border-radius:10px;border:1px dashed rgba(255,255,255,.14);
+    background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:5px;
+  }
+  .pm-jugador.ocupado{border-style:solid;border-color:rgba(217,164,65,.45);background:rgba(217,164,65,.07)}
+  .pm-jt{font:11px Consolas,monospace;letter-spacing:1.5px;color:var(--oro)}
+  .pm-jm{font-size:16px;font-weight:600}
+  .pm-vacia{color:var(--debil);font-weight:400}
+  .pm-jb{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+  .pm-vacio{padding:16px;text-align:center;color:var(--tenue);font-size:13px}
+  .pm-vacio p{margin:0 0 10px}
+  .pm-pasos{font-size:12px;line-height:1.8;color:var(--debil);text-align:left}
+
+  .pm-prueba:not(:empty){margin-top:12px;font-size:12.5px;line-height:1.6}
+  .pm-ok{color:#4ade80}
+  .pm-mal{color:#e0614a}
+  .pm-probando{color:var(--oro)}
+
+  .pm-diag{margin-top:16px;border-top:1px solid rgba(255,255,255,.07);padding-top:14px}
+  .pm-sub{font:10px Consolas,monospace;color:var(--debil);letter-spacing:1.4px;margin-bottom:9px}
+  .pm-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:11px}
+  .pm-chips i{
+    font-style:normal;font-size:11px;padding:4px 8px;border-radius:5px;
+    background:#0b131c;border:1px solid rgba(255,255,255,.08);color:var(--debil);
+  }
+  .pm-chips i.on{background:var(--oro);color:#06080d;border-color:var(--oro);font-weight:600}
+  .pm-ejes{display:grid;grid-template-columns:52px 1fr 52px 1fr 52px 1fr;gap:6px;align-items:center;margin-bottom:6px}
+  .pm-ejes span{font-size:10px;color:var(--debil);font-family:Consolas,monospace}
+  .pm-ejes u{position:relative;display:block;height:6px;background:#0b131c;border-radius:3px;text-decoration:none}
+  .pm-ejes s{position:absolute;top:0;bottom:0;border-radius:3px;text-decoration:none}
+
+  .pm-nota{margin-top:16px;font-size:11px;line-height:1.7;color:var(--debil)}
+  .pm-nota b{color:var(--oro)}
+
+  /* ---------- banda de aviso para el operador ---------- */
+  .banda{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:15;
+    padding:10px 20px;border-radius:9px;font-size:13px;
+    background:rgba(232,176,75,.14);border:1px solid rgba(232,176,75,.45);color:#f0c977;
+    pointer-events:none;
+  }
+  .banda.grave{background:rgba(224,97,74,.15);border-color:rgba(224,97,74,.5);color:#f0917e}
+
+  /* ---------- chip de estado para el operador del stand ---------- */
+  #estado{
+    position:fixed; right:12px; bottom:12px; z-index:9;
+    font:11px/1.6 Consolas,monospace; color:var(--debil);
+    background:rgba(5,7,12,.7); border:1px solid rgba(255,255,255,.07);
+    border-radius:7px; padding:7px 11px; pointer-events:none; opacity:.75;
+  }
+  #estado.oculto{display:none}
+  #estado b{color:var(--tenue); font-weight:400}
+</style>
+</head>
+<body>
+
+<canvas id="lienzo3d"></canvas>
+<canvas id="lienzo"></canvas>
+
+<div id="enlace">
+  <h1>TERRA INCÓGNITA</h1>
+  <div class="sub">Una expedición al interior de la compañía</div>
+  <p>
+    Conecta un Joy-Con para jugar con el movimiento. Se usa <b>uno solo</b>, sostenido
+    como una linterna. Si el mando falla, puedes recorrer la experiencia con el ratón.
+  </p>
+  <div class="fila">
+    <button id="btnEnlazar" class="principal">Conectar Joy-Con</button>
+    <button id="btnRaton">Continuar con ratón</button>
+  </div>
+  <div class="aviso" id="aviso"></div>
+  <div class="pista">
+    <kbd>F</kbd> pantalla completa · <kbd>M</kbd> silenciar música · <kbd>C</kbd> calibrar giro ·
+    <kbd>R</kbd> recentrar · <kbd>P</kbd> prueba de dos jugadores · <kbd>Esc</kbd> volver al inicio
+  </div>
+</div>
+
+<div id="estado" class="oculto"></div>
+
+<!-- Panel del operador. Se abre con F9 y el visitante no debería verlo nunca. -->
+<div id="panelMandos" class="oculto"></div>
+<div id="bandaAviso" class="banda oculto"></div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

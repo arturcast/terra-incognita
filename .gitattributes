@@ -1,0 +1,8 @@
+# Que el código viaje igual entre Windows, macOS y Linux: en el repositorio
+# siempre con saltos de línea LF, y en cada equipo como toque.
+* text=auto eol=lf
+
+# Binarios: que git no intente convertir nada.
+*.png binary
+*.jpg binary
+*.ico binary
