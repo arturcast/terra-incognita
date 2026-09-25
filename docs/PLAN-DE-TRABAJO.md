@@ -386,5 +386,7 @@ distingue.
 | 2026-09-22 | El Camino pasa a 3D con Three.js (U4), con respaldo automático a 2D |
 | 2026-09-25 | El proyecto queda autocontenido para publicarlo en GitHub y seguir en otro equipo |
 | 2026-09-25 | La Etapa 1 recupera su revelación propia («Así elegimos» → Plan Anual), que se había perdido al pasar de seis etapas a tres |
+| 2026-09-25 | La revelación de la Etapa 1 se hace más honda: primero lo que hizo, después la traducción, al final el nombre |
+| 2026-09-25 | Repositorio privado en GitHub: arturcast/terra-incognita |
 | 2026-09-22 | Construidas la ruta de etapas (U2) y la Etapa 3, El Regreso (U3) |
 | 2026-09-22 | Construidas la ruta de etapas (U2) y la Etapa 3, El Regreso (U3) |

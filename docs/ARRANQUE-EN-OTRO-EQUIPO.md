@@ -135,21 +135,21 @@ no seis, y qué se aprobó y cuándo.
 
 ---
 
-## 7. Publicarlo en GitHub
+## 7. El repositorio
+
+**https://github.com/arturcast/terra-incognita** — privado, rama `main`.
+Creado el 2026-09-25 con todo el proyecto (125 archivos).
 
 ```bash
-cd terra-incognita
-git init
-git add .
-git commit -m "Terra Incógnita: las tres etapas, documentación y pruebas"
-git branch -M main
-git remote add origin https://github.com/<usuario>/<repositorio>.git
-git push -u origin main
+git clone https://github.com/arturcast/terra-incognita.git
 ```
 
-Antes de hacerlo, tres cosas:
+Para dar acceso a alguien: en GitHub, *Settings → Collaborators → Add people*.
+Con permiso de escritura puede clonar, trabajar y subir cambios.
 
-1. **Que el repositorio sea privado.** Aquí hay material interno de la
+Tres cosas que conviene saber:
+
+1. **Es privado, y debe seguir siéndolo.** Aquí hay material interno de la
    compañía: los nombres de los procesos y qué revisa Auditoría en cada uno,
    los textos que se van a proyectar en el evento y el guion completo. Nada de
    esto es secreto técnico, pero no es material para publicar en abierto sin

@@ -83,6 +83,8 @@ El diseño de las tres etapas está en [`docs/DISENO-JUEGO.md`](docs/DISENO-JUEG
 
 ---
 
+**Repositorio:** https://github.com/arturcast/terra-incognita (privado).
+
 > **¿Llegas nuevo al proyecto, o lo abres en otro computador?** Empieza por
 > [`docs/ARRANQUE-EN-OTRO-EQUIPO.md`](docs/ARRANQUE-EN-OTRO-EQUIPO.md):
 > requisitos, cómo ponerlo a andar, cómo seguir trabajando (también con una IA)
