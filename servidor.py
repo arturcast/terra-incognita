@@ -18,11 +18,43 @@ Uso:  python servidor.py          (lo lanza abrir.cmd)
 """
 import http.server
 import os
+import socket
 import socketserver
 import sys
 
 # Otro puerto solo para pruebas. En el stand, siempre 8740.
-PUERTO = int(sys.argv[1]) if len(sys.argv) > 1 else 8740
+#   python servidor.py            solo sirve
+#   python servidor.py --abrir    sirve y, ya escuchando, abre Chrome (abrir.cmd)
+#   python servidor.py 8741       otro puerto (pruebas)
+ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+PUERTO = int(ARGS[0]) if ARGS else 8740
+ABRIR = '--abrir' in sys.argv
+URL = 'http://localhost:%d/index.html' % PUERTO
+
+
+def abrir_navegador():
+    """
+    Abre Chrome en pantalla completa; si no está, Edge (los dos tienen WebHID);
+    si tampoco, el navegador por defecto. Se llama con el servidor YA
+    escuchando: así nunca sale «ERR_CONNECTION_REFUSED» por llegar antes.
+    """
+    import subprocess
+    import webbrowser
+    candidatos = []
+    if os.name == 'nt':
+        for base in (os.environ.get('PROGRAMFILES'), os.environ.get('PROGRAMFILES(X86)'), os.environ.get('LOCALAPPDATA')):
+            if base:
+                candidatos.append(os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+        for base in (os.environ.get('PROGRAMFILES(X86)'), os.environ.get('PROGRAMFILES')):
+            if base:
+                candidatos.append(os.path.join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe'))
+    for ruta in candidatos:
+        if os.path.isfile(ruta):
+            subprocess.Popen([ruta, '--start-fullscreen', URL])
+            return
+    print('  No se encontró Chrome ni Edge: se abre el navegador por defecto.')
+    print('  Si no es Chrome o Edge, los Joy-Con no funcionarán (Firefox y Safari no tienen WebHID).')
+    webbrowser.open(URL)
 
 
 class SinCache(http.server.SimpleHTTPRequestHandler):
@@ -46,12 +78,32 @@ class SinCache(http.server.SimpleHTTPRequestHandler):
 
 class Servidor(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # En Windows, SO_REUSEADDR deja que DOS servidores abran el mismo puerto
+    # (y el segundo se queda colgado sin servir nada). Ahí se usa el modo
+    # exclusivo, para que el segundo sepa que el juego ya estaba abierto.
+    allow_reuse_address = os.name != 'nt'
+
+    def server_bind(self):
+        if os.name == 'nt' and hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with Servidor(('127.0.0.1', PUERTO), SinCache) as s:
-        print('  Sirviendo en http://localhost:%d  (sin caché)' % PUERTO)
+    try:
+        s = Servidor(('127.0.0.1', PUERTO), SinCache)
+    except OSError:
+        # El puerto ya está ocupado: casi siempre es que el juego ya está
+        # abierto en otra ventana negra. Se abre el navegador y listo.
+        print('  El puerto %d ya está en uso: el juego ya estaba abierto en otra ventana.' % PUERTO)
+        print('  Si no, cierra el programa que lo usa y vuelve a abrir abrir.cmd.')
+        if ABRIR:
+            abrir_navegador()
+        sys.exit(0)
+    with s:
+        print('  Sirviendo en %s  (sin caché)' % URL)
         print('  Cierra esta ventana para detener el servidor.')
+        if ABRIR:
+            abrir_navegador()
         s.serve_forever()

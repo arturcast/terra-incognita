@@ -8,3 +8,7 @@
 *.ico binary
 *.mp4 binary
 *.mp3 binary
+
+# Los .cmd de Windows, con saltos de línea de Windows: con LF, cmd.exe puede
+# leer mal los bloques y las etiquetas en otro equipo.
+*.cmd text eol=crlf

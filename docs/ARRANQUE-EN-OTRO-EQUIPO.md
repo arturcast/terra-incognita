@@ -60,6 +60,17 @@ En Windows, `abrir.cmd` hace las dos cosas de un doble clic. En macOS o Linux,
 > **No abras `index.html` con doble clic.** WebHID exige contexto seguro y
 > `file://` no lo es. Por eso existe el servidor.
 
+> **«La página localhost ha rechazado la conexión» (`ERR_CONNECTION_REFUSED`)**
+> quiere decir que el servidor no está corriendo; no es el antivirus.
+> - Casi siempre falta **Python**: `abrir.cmd` lo detecta y lo dice. Instálalo
+>   desde https://www.python.org/downloads/ marcando **«Add python.exe to
+>   PATH»**, y vuelve a abrir `abrir.cmd`. (El «python» de la Microsoft Store
+>   que solo abre la tienda no sirve.)
+> - La ventana negra de `abrir.cmd` tiene que **quedarse abierta** mientras se
+>   juega: al cerrarla se apaga el servidor.
+> - `abrir.cmd` abre Chrome cuando el servidor ya está escuchando. Si abriste
+>   la dirección a mano antes de tiempo, basta con recargar (F5).
+
 ### Atajos mientras juegas
 
 `F` pantalla completa · `J` panel de mandos del operador (o `F9`) · `1` `2` `3` saltar

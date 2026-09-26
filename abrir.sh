@@ -16,14 +16,6 @@ echo "  TERRA INCÓGNITA"
 echo "  $URL"
 echo
 
-# Se abre Chrome si está; si no, el navegador por defecto (que debe ser Chrome
-# o Edge: WebHID no existe en Safari ni en Firefox).
-if command -v google-chrome >/dev/null 2>&1; then
-  google-chrome --start-fullscreen "$URL" &
-elif [ -d "/Applications/Google Chrome.app" ]; then
-  open -a "Google Chrome" --args --start-fullscreen "$URL" &
-else
-  echo "  No se encontró Chrome: abre $URL a mano en Chrome o Edge."
-fi
-
-python3 servidor.py
+# El servidor abre el navegador cuando ya está escuchando (--abrir): así no
+# sale «conexión rechazada» por abrirlo antes de tiempo.
+python3 servidor.py --abrir
