@@ -94,14 +94,47 @@ test('un mando no puede ser dos jugadores: al moverlo, deja libre su ranura', as
   gestor.destruir();
 });
 
-test('si se desconecta el jugador 2 y hay relevo, el relevo entra en su lugar', async () => {
-  const { gestor, dispositivos } = montar(3);
+test('si se desconecta el jugador 2 y hay relevo, el relevo entra en su lugar (de cualquier lado)', async () => {
+  const { gestor, dispositivos } = montar(3);    // jc1 derecho, jc2 izquierdo, jc3 derecho
   await gestor.activar('jc1', 0);
   await gestor.activar('jc2', 1);
   gestor._alDesconectar(dispositivos[1]);
   await new Promise((r) => setTimeout(r, 20));
   assert.deepEqual(gestor.ranuras, ['jc1', 'jc3'], 'el relevo debía entrar como jugador 2');
   assert.ok(gestor.consumirAvisos().some((a) => a.texto.includes('jugador 2')));
+  gestor.destruir();
+});
+
+// ======================================================================
+// UN JOY-CON POR JUGADOR, DE CUALQUIER LADO
+// ======================================================================
+
+test('los dos jugadores pueden tener Joy-Con del mismo lado; un mando nunca es de dos', async () => {
+  const { gestor } = montar(3);          // jc1 derecho, jc2 izquierdo, jc3 derecho
+  assert.ok(await gestor.activar('jc1', 0));
+  assert.ok(await gestor.activar('jc3', 1), 'dos derechos: sí');
+  assert.deepEqual(gestor.ranuras, ['jc1', 'jc3']);
+  await gestor.activar('jc3', 0);        // el mismo mando no puede quedar en dos ranuras
+  assert.deepEqual(gestor.ranuras, ['jc3', null]);
+  gestor.destruir();
+});
+
+test('gatillo + hombro en un Joy-Con de reserva avisa «registro» (para vincularlo)', async () => {
+  const { gestor } = montar(2);
+  const e = gestor.entradas.get('jc2');
+  await gestor._vigilarBateria(e);
+  const registros = [];
+  gestor.addEventListener('registro', (ev) => registros.push(ev.detail.entrada.id));
+  const reporte = (id, bytes) => {
+    const ev = new Event('inputreport');
+    ev.reportId = id;
+    ev.data = new DataView(Uint8Array.from(bytes).buffer);
+    e.device.dispatchEvent(ev);
+  };
+  reporte(0x3f, [0x00, 0x80]);            // solo el gatillo: no
+  assert.deepEqual(registros, []);
+  reporte(0x3f, [0x00, 0xc0]);            // gatillo + hombro: sí
+  assert.deepEqual(registros, ['jc2']);
   gestor.destruir();
 });
 

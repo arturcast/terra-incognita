@@ -51,7 +51,7 @@ export const REGIONES = [
     id: 'caudal',
     nombre: 'El Gran Caudal',
     equivale: 'Facturación',
-    x: 0.30, y: 0.62,
+    x: 0.44, y: 0.52,
     riesgo: 0.72, valor: 0.95, senal: 0.88,
     dificultad: 1.0,
     descubierto: false,
@@ -63,7 +63,7 @@ export const REGIONES = [
     id: 'torre',
     nombre: 'La Torre de Señales',
     equivale: 'Dirección Digital',
-    x: 0.50, y: 0.22,
+    x: 0.485, y: 0.12,
     riesgo: 0.74, valor: 0.80, senal: 0.77,
     dificultad: 1.1,
     descubierto: false,
@@ -75,7 +75,7 @@ export const REGIONES = [
     id: 'fundicion',
     nombre: 'La Fundición',
     equivale: 'Compras y contratación',
-    x: 0.62, y: 0.30,
+    x: 0.63, y: 0.32,
     riesgo: 0.85, valor: 0.78, senal: 0.54,
     dificultad: 1.2,
     descubierto: false,
@@ -87,7 +87,7 @@ export const REGIONES = [
     id: 'ramales',
     nombre: 'Los Ramales',
     equivale: 'Construcciones e Ingeniería',
-    x: 0.47, y: 0.45,
+    x: 0.5, y: 0.41,
     riesgo: 0.60, valor: 0.82, senal: 0.70,
     dificultad: 0.9,
     descubierto: false,
@@ -99,7 +99,7 @@ export const REGIONES = [
     id: 'manantial',
     nombre: 'El Manantial',
     equivale: 'Compra y venta de gas',
-    x: 0.61, y: 0.56,
+    x: 0.655, y: 0.57,
     riesgo: 0.56, valor: 0.90, senal: 0.44,
     dificultad: 1.0,
     descubierto: false,
@@ -111,7 +111,7 @@ export const REGIONES = [
     id: 'montana',
     nombre: 'La Montaña Perdida',
     equivale: 'Pérdida No Operacional',
-    x: 0.38, y: 0.26,
+    x: 0.36, y: 0.22,
     riesgo: 0.68, valor: 0.66, senal: 0.60,
     dificultad: 1.0,
     descubierto: false,
@@ -123,7 +123,7 @@ export const REGIONES = [
     id: 'salinas',
     nombre: 'Las Salinas',
     equivale: 'Tarifas y subsidios regulados',
-    x: 0.78, y: 0.58,
+    x: 0.87, y: 0.6,
     riesgo: 0.69, valor: 0.74, senal: 0.40,
     dificultad: 1.3,
     descubierto: false,
@@ -135,7 +135,7 @@ export const REGIONES = [
     id: 'acantilados',
     nombre: 'Los Acantilados',
     equivale: 'Seguridad y salud en el trabajo',
-    x: 0.70, y: 0.82,
+    x: 0.74, y: 0.79,
     riesgo: 0.88, valor: 0.52, senal: 0.35,
     dificultad: 1.0,
     descubierto: false,
@@ -147,7 +147,7 @@ export const REGIONES = [
     id: 'hornos',
     nombre: 'Los Grandes Hornos',
     equivale: 'Gran Industria',
-    x: 0.74, y: 0.45,
+    x: 0.75, y: 0.45,
     riesgo: 0.55, valor: 0.79, senal: 0.52,
     dificultad: 0.9,
     descubierto: false,
@@ -159,7 +159,7 @@ export const REGIONES = [
     id: 'faro',
     nombre: 'El Faro',
     equivale: 'Atención a usuarios',
-    x: 0.16, y: 0.33,
+    x: 0.093, y: 0.28,
     riesgo: 0.44, valor: 0.66, senal: 0.92,
     dificultad: 0.7,
     descubierto: false,
@@ -171,7 +171,7 @@ export const REGIONES = [
     id: 'represa',
     nombre: 'La Represa',
     equivale: 'Recaudo y cartera',
-    x: 0.13, y: 0.55,
+    x: 0.28, y: 0.63,
     riesgo: 0.52, valor: 0.70, senal: 0.66,
     dificultad: 0.8,
     descubierto: false,
@@ -183,7 +183,7 @@ export const REGIONES = [
     id: 'poblado',
     nombre: 'El Poblado',
     equivale: 'Gestión Humana',
-    x: 0.24, y: 0.42,
+    x: 0.25, y: 0.41,
     riesgo: 0.39, valor: 0.62, senal: 0.48,
     dificultad: 0.8,
     descubierto: false,
@@ -195,7 +195,7 @@ export const REGIONES = [
     id: 'puente',
     nombre: 'El Puente Viejo',
     equivale: 'Mantenimiento de infraestructura',
-    x: 0.55, y: 0.72,
+    x: 0.61, y: 0.68,
     riesgo: 0.78, valor: 0.58, senal: 0.31,
     dificultad: 1.1,
     descubierto: false,
@@ -213,7 +213,7 @@ export const REGIONES = [
     id: 'isla',
     nombre: 'La Isla Brillante',
     equivale: 'Brilla — financiación no bancaria',
-    x: 0.90, y: 0.145,
+    x: 0.905, y: 0.125,
     riesgo: 0.70, valor: 0.76, senal: 0.20,
     dificultad: 1.15,
     descubierto: false,
@@ -297,45 +297,66 @@ export function evaluar(elegidas, fraccionExplorada) {
 }
 
 /**
- * Costa del territorio. Determinista: el mapa es siempre el mismo, para que
- * quien vuelva reconozca el lugar.
+ * Costa del territorio, calcada del dibujo del mapa (assets/mapa-territorio.jpg,
+ * 1672x941) con herramientas/calcar-costa.py: 160 puntos en fracción de la
+ * imagen, que se dibuja ocupando todo el lienzo. Antes era una suma de senos;
+ * ahora la costa tiene que coincidir con el dibujo, o un lugar podría caer en
+ * el agua pintada. Las pruebas de AGENTS.md §6 la usan para verificarlo.
  */
-export function generarCosta(puntos = 220) {
-  const crudo = [];
-  for (let i = 0; i < puntos; i++) {
-    const a = (i / puntos) * Math.PI * 2;
-    const r =
-      0.335 +
-      Math.sin(a * 2 + 0.7) * 0.055 +
-      Math.sin(a * 3 - 1.3) * 0.038 +
-      Math.sin(a * 5 + 2.1) * 0.022 +
-      Math.sin(a * 8 - 0.4) * 0.011;
-    crudo.push({ x: Math.cos(a) * r * 1.22, y: Math.sin(a) * r });
-  }
+const COSTA = [
+  [0.9342, 0.5], [0.9318, 0.5298], [0.9533, 0.5596], [0.9629, 0.5936], [0.9486, 0.6234], [0.9629, 0.6574],
+  [0.939, 0.683], [0.9246, 0.7043], [0.9007, 0.7213], [0.8888, 0.7468], [0.8816, 0.7681], [0.8792, 0.7979],
+  [0.8242, 0.7766], [0.7955, 0.7809], [0.7763, 0.7809], [0.7572, 0.7894], [0.7548, 0.8064], [0.75, 0.8277],
+  [0.75, 0.8574], [0.7476, 0.883], [0.738, 0.8957], [0.7045, 0.866], [0.6998, 0.8787], [0.6471, 0.7979],
+  [0.6471, 0.8191], [0.6328, 0.8064], [0.6256, 0.8191], [0.616, 0.8191], [0.616, 0.8532], [0.6089, 0.8574],
+  [0.6065, 0.883], [0.5993, 0.9], [0.5873, 0.883], [0.5778, 0.883], [0.5682, 0.883], [0.5586, 0.8787],
+  [0.5514, 0.883], [0.5419, 0.8787], [0.5323, 0.8872], [0.5251, 0.9043], [0.5156, 0.8787], [0.5084, 0.8745],
+  [0.4988, 0.8702], [0.494, 0.8277], [0.4868, 0.8191], [0.4868, 0.7723], [0.4773, 0.7936], [0.4677, 0.8106],
+  [0.4605, 0.8021], [0.4533, 0.7979], [0.4486, 0.7894], [0.4414, 0.7851], [0.4342, 0.7809], [0.427, 0.7851],
+  [0.4222, 0.7766], [0.4151, 0.7681], [0.4079, 0.7638], [0.4294, 0.6957], [0.3911, 0.7596], [0.3816, 0.7596],
+  [0.3744, 0.7511], [0.3648, 0.7468], [0.3529, 0.7511], [0.3481, 0.7383], [0.3505, 0.7128], [0.3122, 0.7426],
+  [0.2955, 0.7383], [0.2883, 0.7298], [0.2955, 0.7], [0.2189, 0.7426], [0.2045, 0.7298], [0.183, 0.717],
+  [0.1806, 0.6957], [0.1639, 0.6787], [0.1567, 0.6532], [0.1184, 0.6404], [0.1017, 0.6191], [0.0993, 0.5894],
+  [0.0778, 0.5596], [0.0801, 0.5298], [0.0897, 0.5], [0.0969, 0.4702], [0.1065, 0.4447], [0.073, 0.4064],
+  [0.0467, 0.3681], [0.0634, 0.3426], [0.073, 0.3085], [0.0921, 0.2872], [0.0945, 0.2574], [0.1687, 0.2702],
+  [0.1854, 0.2574], [0.1902, 0.2319], [0.2045, 0.2191], [0.2452, 0.2319], [0.2644, 0.2277], [0.2859, 0.2277],
+  [0.2907, 0.2064], [0.3026, 0.1979], [0.3074, 0.1851], [0.3266, 0.1894], [0.3337, 0.1723], [0.3457, 0.1723],
+  [0.3529, 0.1596], [0.3624, 0.1511], [0.3696, 0.1426], [0.3888, 0.1638], [0.4079, 0.1851], [0.4151, 0.1766],
+  [0.4222, 0.1723], [0.4294, 0.1638], [0.4366, 0.1553], [0.4438, 0.1553], [0.4533, 0.1511], [0.4581, 0.1298],
+  [0.4653, 0.1298], [0.4749, 0.1213], [0.4797, 0.0957], [0.4892, 0.0957], [0.4988, 0.1213], [0.5084, 0.117],
+  [0.5156, 0.1213], [0.5251, 0.1128], [0.5323, 0.117], [0.5419, 0.1085], [0.5514, 0.1043], [0.5586, 0.1255],
+  [0.5658, 0.1255], [0.5754, 0.1298], [0.5825, 0.1383], [0.5897, 0.1426], [0.5945, 0.1596], [0.5945, 0.1979],
+  [0.6089, 0.1809], [0.6184, 0.1723], [0.6232, 0.1936], [0.6304, 0.1936], [0.64, 0.1979], [0.6471, 0.2064],
+  [0.6591, 0.2021], [0.6328, 0.2787], [0.6423, 0.2787], [0.6639, 0.2574], [0.6782, 0.2574], [0.6854, 0.2617],
+  [0.6926, 0.2745], [0.7045, 0.2787], [0.7093, 0.2872], [0.7213, 0.2957], [0.7404, 0.2957], [0.7572, 0.3043],
+  [0.7691, 0.3128], [0.7955, 0.317], [0.817, 0.3255], [0.8313, 0.3426], [0.8385, 0.3638], [0.8529, 0.3809],
+  [0.8672, 0.4021], [0.8624, 0.4277], [0.8983, 0.4447], [0.9246, 0.4702],
+].map(([x, y]) => ({ x, y }));
 
-  // Encajar en un recuadro fijo: la suma de senos no es simétrica y sin esto
-  // la tierra se sale por un borde y deja hueco en el otro.
-  const xs = crudo.map((p) => p.x), ys = crudo.map((p) => p.y);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs);
-  const y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const CAJA = { x: 0.08, y: 0.17, w: 0.76, h: 0.70 };
+/** Contorno de la isla del templo, en fracción de la imagen (absoluto). */
+const ISLA = [
+  [0.9438, 0.1426], [0.9438, 0.1553], [0.9318, 0.1638], [0.9318, 0.1766], [0.9318, 0.1851], [0.9151, 0.1809],
+  [0.9127, 0.1894], [0.9079, 0.1894], [0.9055, 0.1936], [0.9007, 0.1979], [0.8959, 0.1936], [0.8911, 0.1936],
+  [0.8864, 0.1936], [0.884, 0.1936], [0.8768, 0.2106], [0.8768, 0.1936], [0.872, 0.1894], [0.872, 0.1766],
+  [0.8696, 0.1723], [0.8648, 0.1723], [0.86, 0.1681], [0.8577, 0.1638], [0.8361, 0.1681], [0.8242, 0.1553],
+  [0.8266, 0.1426], [0.8313, 0.1298], [0.8433, 0.1213], [0.8553, 0.117], [0.8577, 0.1085], [0.8624, 0.1085],
+  [0.8672, 0.1043], [0.8696, 0.1], [0.8744, 0.1], [0.8768, 0.0957], [0.8816, 0.0957], [0.884, 0.1043],
+  [0.8864, 0.1043], [0.8911, 0.0915], [0.8959, 0.0872], [0.8983, 0.0915], [0.9031, 0.0915], [0.9175, 0.0745],
+  [0.9222, 0.0787], [0.9222, 0.0957], [0.9175, 0.1085], [0.9175, 0.117], [0.9199, 0.1255], [0.9199, 0.134],
+].map(([x, y]) => ({ x, y }));
 
-  return crudo.map((p) => ({
-    x: CAJA.x + ((p.x - x0) / (x1 - x0)) * CAJA.w,
-    y: CAJA.y + ((p.y - y0) / (y1 - y0)) * CAJA.h,
-  }));
+/** La costa de la tierra firme. Determinista: el mapa es siempre el mismo. */
+export function generarCosta() {
+  return COSTA.map((p) => ({ ...p }));
 }
 
-/** Contorno de la isla escondida, centrada en su región. */
-export function generarIsla(puntos = 60) {
-  const r0 = 0.042;
-  const salida = [];
-  for (let i = 0; i < puntos; i++) {
-    const a = (i / puntos) * Math.PI * 2;
-    const r = r0 + Math.sin(a * 3 + 1.1) * 0.010 + Math.sin(a * 5 - 0.6) * 0.005;
-    salida.push({ x: Math.cos(a) * r * 1.25, y: Math.sin(a) * r });
-  }
-  return salida;
+/**
+ * Contorno de la isla escondida, RELATIVO a su región (quien dibuja le suma
+ * `isla.x, isla.y`, como siempre).
+ */
+export function generarIsla() {
+  const isla = REGIONES.find((r) => r.id === 'isla');
+  return ISLA.map((p) => ({ x: p.x - isla.x, y: p.y - isla.y }));
 }
 
 /** ¿Cae el punto dentro de un polígono? Se usa en las pruebas del mapa. */

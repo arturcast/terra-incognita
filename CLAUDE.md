@@ -32,7 +32,7 @@ que más se olvidan.
    acumula. Es la causa de que los títulos se montaran.
 
 6. **Tras tocar el mando, el puntero, el gestor o el motor**, `node --test
-   tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js`.
+   tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js`.
    También tras tocar `src/juego/` (equilibrio de El Camino y prueba de humo). Ver [`docs/ESTABILIDAD.md`](docs/ESTABILIDAD.md):
    la primera demo falló por cosas que solo esas pruebas ven.
 

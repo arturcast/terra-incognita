@@ -10,8 +10,12 @@
  *                      Sin datos no hay nada que analizar.
  *   HALLAZGOS OCULTOS— invisibles hasta que se analiza. Casi todos en los
  *                      carriles laterales: lo menos transitado.
- *   CARTELES ✓       — lo que el proceso dice de sí mismo: controles, manual.
- *                      Brillan y suman poco.
+ *   POWER BI         — el tablero de Power BI (en el código sigue llamándose
+ *                      'control'). Al recogerlo analiza solo: enciende la
+ *                      lente sin gastar datos. Es la herramienta, no el
+ *                      hallazgo: revela, pero hay que ir a por lo revelado.
+ *                      (Antes era un cartel ✓ «todo en orden»; cambiado a
+ *                      pedido del usuario el 2026-09-26.)
  *   MUROS            — las excusas de siempre. Chocar hace perder datos.
  *   ESTACIONES       — el proceso de principio a fin, por la cadena real del
  *                      gas: de donde entra a donde se cobra.
@@ -43,6 +47,13 @@ export const CAMINO = {
    */
   inicioOcultos: 70,     // metros libres de hallazgos al empezar
   sepOcultos: 30,        // metros mínimos entre dos hallazgos
+  /**
+   * Metros sin muros ni nada escondido al entrar en un tramo nuevo: es lo que
+   * dura el letrero «Entrando a…» (unos 2,6 s). Mientras se lee, no se choca.
+   */
+  pausaTramo: 70,
+  /** Metros que un objeto sigue viéndose después de pasar al jugador: sale de la pantalla, no se esfuma. */
+  atras: 12,
   puntos: { hallazgo: 100, control: 10, dato: 2 },
 };
 
@@ -85,7 +96,8 @@ export function azar(semilla) {
 }
 
 function elegirCarril(rnd, pesos, ocupados) {
-  const libres = [0, 1, 2].filter((c) => !ocupados.includes(c));
+  // Peso cero es «nunca aquí» (p. ej. Power BI en el centro), aunque sea el único libre.
+  const libres = [0, 1, 2].filter((c) => !ocupados.includes(c) && pesos[c] > 0);
   if (!libres.length) return -1;
   const total = libres.reduce((s, c) => s + pesos[c], 0);
   let r = rnd() * total;
@@ -94,20 +106,50 @@ function elegirCarril(rnd, pesos, ocupados) {
 }
 
 /**
+ * Qué dos estaciones se juegan en El Camino. Se eligen SOLAS, con la
+ * prioridad que el visitante le dio en El Mapa: de los cinco lugares donde
+ * mandó un equipo, las dos primeras (en el orden en que las envió) que
+ * coincidan con un tramo de la cadena del gas.
+ *
+ * Si mandó menos de dos equipos a lugares de la cadena —o si no hay datos de
+ * El Mapa, por ejemplo al entrar directo con la tecla 2 para ensayar—, se
+ * completa con el orden de siempre (El Manantial, Los Ramales…) hasta tener
+ * dos. Así la etapa nunca se queda sin poder empezar.
+ *
+ * @param {{id: string}[]} elegidasMapa `elegidas` de El Mapa, en prioridad.
+ * @returns {object[]} exactamente dos entradas de ESTACIONES, en ese orden.
+ */
+export function elegirEstaciones(elegidasMapa) {
+  const ids = ESTACIONES.map((e) => e.id);
+  const porPrioridad = (elegidasMapa || []).map((r) => r.id).filter((id) => ids.includes(id));
+  const elegidos = [];
+  for (const id of [...porPrioridad, ...ids]) {
+    if (elegidos.length >= 2) break;
+    if (!elegidos.includes(id)) elegidos.push(id);
+  }
+  return elegidos.map((id) => ESTACIONES.find((e) => e.id === id));
+}
+
+/**
  * Genera el camino completo. Garantías que comprueban las pruebas:
  *  - nunca más de un muro por fila: siempre hay por dónde pasar;
  *  - un hallazgo nunca comparte carril y fila con un muro;
  *  - la mayoría de los hallazgos va por los laterales.
+ *
+ * @param {number} semilla
+ * @param {object[]} estaciones tramos a recorrer, en orden. Por defecto, los
+ *   cinco de siempre (lo que usan las pruebas). El Camino en juego pasa aquí
+ *   las dos que elige `elegirEstaciones()`.
  */
-export function generarCamino(semilla) {
+export function generarCamino(semilla, estaciones = ESTACIONES) {
   const rnd = azar(semilla);
   const objetos = [];
-  const tramo = CAMINO.largo / ESTACIONES.length;
+  const tramo = CAMINO.largo / estaciones.length;
   // Posiciones de todos los hallazgos ya puestos, de TODAS las estaciones:
   // la separación mínima también vale al cruzar de una estación a la otra.
   const posiciones = [];
 
-  ESTACIONES.forEach((est, k) => {
+  estaciones.forEach((est, k) => {
     const ini = k * tramo, fin = ini + tramo;
     objetos.push({ tipo: 'estacion', s: ini + 3, carril: 1, estacion: k });
 
@@ -122,6 +164,7 @@ export function generarCamino(semilla) {
       const i = Math.floor(rnd() * filas.length);
       const s = filas[i];
       if (s < CAMINO.inicioOcultos) continue;
+      if (k > 0 && s < ini + CAMINO.pausaTramo) continue;   // se está leyendo el letrero
       if (posiciones.some((q) => Math.abs(q - s) < CAMINO.sepOcultos)) continue;
       conOculto.add(i);
       posiciones.push(s);
@@ -135,7 +178,8 @@ export function generarCamino(semilla) {
         ocupados.push(carril);
       }
       // Muros: más frecuentes a medida que avanza, y más en los laterales.
-      if (rnd() < 0.26 + 0.12 * (k / (ESTACIONES.length - 1))) {
+      const enPausa = k > 0 && s < ini + CAMINO.pausaTramo;
+      if (rnd() < 0.26 + 0.12 * (k / Math.max(1, estaciones.length - 1)) && !enPausa) {
         const c = elegirCarril(rnd, [1.3, 0.8, 1.3], ocupados);
         if (c >= 0) {
           objetos.push({ tipo: 'muro', s, carril: c, estacion: k, texto: EXCUSAS[Math.floor(rnd() * EXCUSAS.length)] });
@@ -148,9 +192,10 @@ export function generarCamino(semilla) {
         const c = elegirCarril(rnd, [1, 2, 1], ocupados);
         if (c >= 0) { objetos.push({ tipo: 'dato', s: s + d * 2.5, carril: c, estacion: k }); ocupados.push(c); }
       }
-      // Carteles ✓: casi siempre en el centro, a la vista de todos.
+      // Tableros de Power BI: en los carriles laterales. Hay que ir a buscarlos:
+      // quien se queda en el centro, cómodo, no los toma y no ve nada.
       if (rnd() < 0.2) {
-        const c = elegirCarril(rnd, [0.1, 0.8, 0.1], ocupados);
+        const c = elegirCarril(rnd, [1, 0, 1], ocupados);
         if (c >= 0) objetos.push({ tipo: 'control', s: s + 3.5, carril: c, estacion: k });
       }
     });
@@ -172,15 +217,24 @@ export function carrilDesdePuntero(x, ancho, actual = 1) {
 
 /** La carrera de UN jugador. Dos jugadores = dos Carreras sobre el mismo camino. */
 export class Carrera {
-  constructor(objetos) {
+  /**
+   * @param {object[]} objetos lo que genera `generarCamino()`.
+   * @param {object[]} estaciones las estaciones que se están recorriendo, en
+   *   el mismo orden con que se generó `objetos`. Por defecto las cinco de
+   *   siempre.
+   */
+  constructor(objetos, estaciones = ESTACIONES) {
+    this.estaciones = estaciones;
     this.objetos = objetos.map((o) => ({ ...o, hecho: false, revelado: false }));
     this._i = 0;                    // primer objeto aún no alcanzado
+    this._iAtras = 0;               // primer objeto que todavía se ve por detrás
     this.distancia = 0;
     this.carril = 1;
     this.xCarril = 1;               // posición animada, para dibujar
     this.datos = 0;                 // medidor actual
     this.registros = 0;             // datos recogidos en total
-    this.controles = 0;
+    this.controles = 0;             // tableros de Power BI recogidos
+    this.analisisPB = 0;            // veces que un tablero analizó solo
     this.choques = 0;
     this.hallazgos = [];
     this.noVistos = 0;              // hallazgos que pasaron sin analizarse
@@ -199,8 +253,10 @@ export class Carrera {
     return this.tropiezo > 0 ? v * 0.5 : v;
   }
   get estacion() {
-    return Math.min(ESTACIONES.length - 1, Math.floor(this.progreso * ESTACIONES.length));
+    return Math.min(this.estaciones.length - 1, Math.floor(this.progreso * this.estaciones.length));
   }
+  /** El id de la estación actual ('manantial', 'ramales'…), para quien dibuja. */
+  get estacionId() { return this.estaciones[this.estacion].id; }
   get puntos() {
     const p = CAMINO.puntos;
     return this.hallazgos.length * p.hallazgo + this.controles * p.control + this.registros * p.dato;
@@ -208,14 +264,21 @@ export class Carrera {
 
   _evento(tipo, datos = {}) { this.eventos.push({ tipo, ...datos }); }
 
-  /** Objetos por delante, a menos de `hasta` metros, del más lejano al más cercano. */
+  /**
+   * Objetos a la vista, del más lejano al más cercano: los que vienen, a menos
+   * de `hasta` metros, y los que ya pasaron al lado sin recogerse, hasta
+   * `CAMINO.atras` metros por detrás. Así salen de la pantalla en vez de
+   * esfumarse frente al jugador. Lo que se recoge (datos, carteles, lo
+   * escondido atrapado) sí desaparece: ya lo lleva encima.
+   */
   visibles(hasta = CAMINO.vista) {
+    while (this._iAtras < this._i && this.objetos[this._iAtras].s < this.distancia - CAMINO.atras) this._iAtras++;
     const out = [];
-    for (let k = this._i; k < this.objetos.length; k++) {
+    for (let k = this._iAtras; k < this.objetos.length; k++) {
       const o = this.objetos[k];
       const dz = o.s - this.distancia;
       if (dz > hasta) break;
-      if (!o.hecho && dz > -2) out.push({ o, dz });
+      if (!o.recogido && dz > -CAMINO.atras) out.push({ o, dz });
     }
     return out.reverse();
   }
@@ -270,16 +333,24 @@ export class Carrera {
           break;
         case 'dato':
           if (aqui) {
+            o.recogido = true;
             this.datos = Math.min(CAMINO.maxDatos, this.datos + 1);
             this.registros++;
             this._evento('dato');
           }
           break;
         case 'control':
-          if (aqui) { this.controles++; this._evento('control'); }
+          // El tablero de Power BI cruza los datos por ti: análisis sin costo.
+          if (aqui) {
+            o.recogido = true;
+            this.controles++;
+            if (this.lente <= 0) { this.lente = CAMINO.duracionLente; this.analisisPB++; }
+            this._evento('control');
+          }
           break;
         case 'muro':
           if (aqui) {
+            o.derribado = true;           // quien dibuja lo tumba: no pasa a través del jugador
             this.choques++;
             this.datos = Math.max(0, this.datos - CAMINO.castigoChoque);
             this.tropiezo = CAMINO.tropiezo;
@@ -287,7 +358,7 @@ export class Carrera {
           }
           break;
         case 'oculto':
-          if (o.revelado && aqui) { this.hallazgos.push(o); this._evento('hallazgo', { estacion: o.estacion }); }
+          if (o.revelado && aqui) { o.recogido = true; this.hallazgos.push(o); this._evento('hallazgo', { estacion: o.estacion }); }
           else if (o.revelado) this.vistosNoAlcanzados++;
           else this.noVistos++;
           break;
@@ -299,7 +370,7 @@ export class Carrera {
   resultado() {
     const total = this.tiempoEnCarril.reduce((a, b) => a + b, 0) || 1;
     const carriles = this.tiempoEnCarril.map((t) => t / total);
-    const porEstacion = ESTACIONES.map((e, k) => ({
+    const porEstacion = this.estaciones.map((e, k) => ({
       nombre: e.nombre,
       que: e.que,
       existentes: this.objetos.filter((o) => o.tipo === 'oculto' && o.estacion === k).length,
@@ -312,6 +383,7 @@ export class Carrera {
       porEstacion,
       datos: this.registros,
       controles: this.controles,
+      analisisPB: this.analisisPB,
       choques: this.choques,
       noVistos: this.noVistos,
       vistosNoAlcanzados: this.vistosNoAlcanzados,

@@ -1,5 +1,5 @@
 /**
- * panel-mandos.js — Panel del operador del stand. Se abre con F9.
+ * panel-mandos.js — Panel del operador del stand. Se abre con la tecla J (o F9).
  *
  * Es HTML y no lienzo por tres razones: `requestDevice()` exige un gesto real
  * del usuario sobre un elemento del DOM; la lista, los botones y el texto los
@@ -9,6 +9,7 @@
  * Nunca aparece solo. El visitante no debería verlo jamás.
  */
 
+import { TablaPuntajes } from '../datos/puntajes.js';
 import { BOTON } from '../core/joycon.js';
 import { ETIQUETA_NIVEL, COLOR_NIVEL, NIVEL } from '../core/mandos.js';
 
@@ -47,16 +48,20 @@ export class PanelMandos {
       <div class="pm-caja">
         <header>
           <b>Mandos</b>
-          <span class="pm-cerrar">F9 cierra</span>
+          <span class="pm-cerrar">J o Esc cierra</span>
         </header>
         <div class="pm-sub">JUGADORES</div>
         <div class="pm-jugadores"></div>
         <button class="pm-accion pm-dos">Ir a la sala de prueba de dos jugadores (tecla P)</button>
+        <button class="pm-accion pm-calibrar">Calibrar los mandos en juego (déjalos quietos)</button>
         <div class="pm-sub" style="margin-top:18px">MANDOS AUTORIZADOS</div>
         <div class="pm-lista"></div>
         <button class="pm-accion pm-sync">＋ Sincronizar un mando nuevo</button>
         <div class="pm-prueba"></div>
         <div class="pm-diag"></div>
+        <div class="pm-sub" style="margin-top:18px">PUNTAJES</div>
+        <button class="pm-accion pm-borrar">Borrar tabla de puntajes</button>
+        <div class="pm-borrado"></div>
         <div class="pm-nota">
           Servidor en el puerto <b>8740</b>. No lo cambies: Chrome ataría las
           autorizaciones a otro origen y olvidaría los mandos.
@@ -69,9 +74,35 @@ export class PanelMandos {
     this.zonaDiag = this.raiz.querySelector('.pm-diag');
 
     this.raiz.querySelector('.pm-sync').addEventListener('click', () => this._sincronizar());
+    this.raiz.querySelector('.pm-calibrar').addEventListener('click', () => {
+      const js = this.motor.jugadores.filter((j) => j.estado.conectado);
+      js.forEach((j) => j.calibrar());
+      this.zonaPrueba.innerHTML = js.length
+        ? '<div class="pm-probando">Calibrando ' + js.length + (js.length === 1 ? ' mando' : ' mandos') +
+          '… déjalos quietos sobre la mesa unos segundos (el chip de arriba dice «calibrando…»).</div>'
+        : '<div class="pm-mal">No hay ningún mando en juego para calibrar.</div>';
+    });
     this.raiz.querySelector('.pm-dos').addEventListener('click', () => {
       this.alternar(false);
       this.motor.ir('prueba2j');
+    });
+    // Vaciar la tabla de los mejores (p. ej. tras las pruebas o antes de un evento).
+    // Pide confirmar con un segundo clic: no se borra por accidente.
+    const borrar = this.raiz.querySelector('.pm-borrar');
+    const zonaBorrado = this.raiz.querySelector('.pm-borrado');
+    let armado = false;
+    borrar.addEventListener('click', () => {
+      if (!armado) {
+        armado = true;
+        borrar.textContent = '¿Seguro? Pulsa otra vez para borrar todos los puntajes';
+        setTimeout(() => { armado = false; borrar.textContent = 'Borrar tabla de puntajes'; }, 4000);
+        return;
+      }
+      armado = false;
+      new TablaPuntajes().borrar();
+      borrar.textContent = 'Borrar tabla de puntajes';
+      zonaBorrado.innerHTML = '<div class="pm-ok">Tabla de puntajes vacía.</div>';
+      setTimeout(() => { zonaBorrado.innerHTML = ''; }, 3000);
     });
     // Clic fuera de la caja cierra, igual que cualquier diálogo.
     this.raiz.addEventListener('click', (e) => { if (e.target === this.raiz) this.alternar(false); });
@@ -215,6 +246,12 @@ export class PanelMandos {
 
   async _sincronizar() {
     try {
+      // En pantalla completa la ventana de permisos de Chrome puede no verse:
+      // se sale antes de pedirla (sin esperar, para no perder el clic).
+      if (document.fullscreenElement) {
+        if (this.motor.salirDePantallaCompleta) this.motor.salirDePantallaCompleta();   // sin abrir la pausa
+        else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
       const id = await this.gestor.autorizar();
       if (id) {
         this.zonaPrueba.innerHTML = '<div class="pm-ok">Mando autorizado. Ya puedes ponerlo en juego.</div>';

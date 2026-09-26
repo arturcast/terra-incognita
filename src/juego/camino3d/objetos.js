@@ -12,12 +12,12 @@
  * se respeta al pie de la letra.
  */
 
-import { CAMINO, ESTACIONES } from '../carrera.js';
+import { CAMINO } from '../carrera.js';
 import { ANCHO_CARRIL } from './escenario.js';
 
 const AZUL = 0x5aa9e6;
 const ROJO = 0xff4a3a;
-const VERDE = 0x4ec9a5;
+const ORO = 0xf6c343;
 
 /** Un cartel de texto pintado con Canvas: la IA de imágenes escribe mal. */
 function texturaTexto(THREE, texto, { ancho = 512, alto = 128, fondo = 'rgba(8,12,18,0.88)',
@@ -55,10 +55,11 @@ export class Objetos {
     this._textos = new Map();      // excusa -> textura, para no repintarlas
 
     this.reservas = {
-      dato: this._reserva(12, () => this._dato()),
-      control: this._reserva(5, () => this._control()),
-      muro: this._reserva(7, () => this._muro()),
-      oculto: this._reserva(5, () => this._oculto()),
+      // Alcanzan para lo que viene y lo que acaba de pasar al lado.
+      dato: this._reserva(20, () => this._dato()),
+      control: this._reserva(7, () => this._control()),
+      muro: this._reserva(9, () => this._muro()),
+      oculto: this._reserva(6, () => this._oculto()),
       estacion: this._reserva(2, () => this._arco()),
     };
   }
@@ -90,16 +91,30 @@ export class Objetos {
     return g;
   }
 
-  /** ✓ Cartel «todo en orden»: impecable, y no esconde nada. */
+  /**
+   * El tablero de Power BI: un portátil de piedra y oro (imagen del usuario,
+   * assets/obj-powerbi.png) que flota con un halo dorado. Al recogerlo, analiza.
+   */
   _control() {
     const THREE = this.THREE;
     const g = new THREE.Group();
-    const mat = this.tex.control
-      ? new THREE.MeshBasicMaterial({ map: this.tex.control, transparent: true, alphaTest: 0.35 })
-      : new THREE.MeshBasicMaterial({ color: VERDE });
-    const cartel = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 2.3), mat);
-    cartel.position.y = 1.5;
-    g.add(cartel);
+    const imagen = this.tex.powerbi;
+    const mat = imagen
+      ? new THREE.MeshBasicMaterial({ map: imagen, transparent: true, alphaTest: 0.25 })
+      : new THREE.MeshBasicMaterial({ color: ORO });
+    const portatil = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), mat);
+    portatil.position.y = 1.45;
+    g.add(portatil);
+    // halo en el suelo: se ve de lejos que es algo que se recoge
+    const halo = new THREE.Mesh(
+      new THREE.CircleGeometry(1.05, 24),
+      new THREE.MeshBasicMaterial({ color: ORO, transparent: true, opacity: 0.35, depthWrite: false })
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = 0.03;
+    g.add(halo);
+    g.userData.portatil = portatil;
+    g.userData.halo = halo;
     return g;
   }
 
@@ -195,7 +210,9 @@ export class Objetos {
    */
   sincronizar(carrera, dt, t) {
     const usadas = { dato: 0, control: 0, muro: 0, oculto: 0, estacion: 0 };
-    const vis = carrera.visibles(CAMINO.vista);
+    // De cerca a lejos: si alguna vez faltaran piezas, que falten en la
+    // niebla del fondo y nunca frente al jugador.
+    const vis = carrera.visibles(CAMINO.vista).reverse();
 
     for (const { o, dz } of vis) {
       // Lo escondido no existe hasta que se analiza: es la lección de la etapa.
@@ -216,30 +233,37 @@ export class Objetos {
         m.userData.cristal.rotation.y = t * 1.8;
         m.userData.cristal.position.y = 1.1 + Math.sin(t * 3 + o.s) * 0.12;
       } else if (o.tipo === 'oculto') {
-        if (nuevo) m.userData.emergido = 0;
-        m.userData.emergido = Math.min(1, (m.userData.emergido || 0) + dt * 3.5);
-        const e = m.userData.emergido;
+        // Se guarda en el objeto, no en la pieza: si la pieza cambia de dueño,
+        // el cristal no vuelve a salir del suelo.
+        o._emergido = Math.min(1, (o._emergido || 0) + dt * 3.5);
+        const e = o._emergido;
         m.position.y = -1.4 + 1.4 * e;
         m.userData.cristal.rotation.y = t * 1.2;
         const p = 1 + Math.sin(t * 6) * 0.06;
         m.userData.cristal.scale.setScalar(p * (0.6 + 0.4 * e));
+      } else if (o.tipo === 'control') {
+        // flota y late: llama a recogerlo
+        m.userData.portatil.position.y = 1.45 + Math.sin(t * 2.6 + o.s) * 0.12;
+        m.userData.halo.material.opacity = 0.25 + 0.15 * (0.5 + 0.5 * Math.sin(t * 4 + o.s));
       } else if (o.tipo === 'muro') {
         if (nuevo) {
           m.userData.cartel.material.map = this._textoDe('«' + o.texto + '»');
           m.userData.cartel.material.needsUpdate = true;
         }
+        // El muro con el que se chocó cae de espaldas: si siguiera de pie,
+        // pasaría a través del jugador y taparía la cámara.
+        o._caida = o.derribado ? Math.min(1, (o._caida || 0) + dt * 5) : 0;
+        m.rotation.x = -o._caida * Math.PI / 2;
+        m.userData.cartel.visible = !o.derribado;
       } else if (o.tipo === 'estacion') {
         if (nuevo) {
-          const e = ESTACIONES[o.estacion];
+          const e = carrera.estaciones[o.estacion];
           m.userData.letrero.material.map = this._textoDe(e ? e.nombre : '', {
             ancho: 1024, alto: 170, tamano: 92, color: '#f0c977', fondo: 'rgba(8,12,18,0.9)',
           });
           m.userData.letrero.material.needsUpdate = true;
         }
       }
-      // dz no se usa para colocar (la posición es absoluta), pero sí para
-      // atenuar lo que está justo encima de la cámara.
-      if (dz < -1.5) m.visible = false;
     }
 
     for (const [tipo, reserva] of Object.entries(this.reservas)) {

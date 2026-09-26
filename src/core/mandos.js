@@ -8,6 +8,12 @@
  * Idea central: el objeto `JoyCon` **nunca se reemplaza**. Este gestor le
  * cambia el dispositivo por debajo. Las escenas ni se enteran.
  *
+ * UN JOY-CON POR JUGADOR (pedido del usuario, 2026-09-26): cada jugador tiene un
+ * solo mando, de cualquier lado, y un mando es de un solo jugador. Quién es
+ * quién se decide en la pantalla de vinculación (escenas/jugadores.js), estilo
+ * Switch: cada uno mantiene pulsados el gatillo y el botón de hombro de SU
+ * Joy-Con (ZL + L o ZR + R). Este gestor avisa con el evento 'registro'.
+ *
  * Los mandos que no están en juego también se abren, pero con el IMU apagado:
  * así se les puede leer la batería sin gastarla de más, y el cambio en
  * caliente no tiene que pedir permisos ni abrir diálogos.
@@ -182,8 +188,20 @@ export class GestorMandos extends EventTarget {
 
   /** Para la conexión inicial: el mejor mando autorizado, esté o no en juego. */
   mejorDisponible() {
-    return this.activo || this.relevo;
+    return this.activo || this.relevoPara(0);
   }
+
+  /** ¿Puede este mando ser el jugador `ranura`? '' si sí; si no, el porqué. */
+  razonNo(id, ranura) {
+    if (!this.entradas.get(id)) return 'Ese mando no está autorizado.';
+    if (ranura < 0 || ranura >= this.jugadores.length) return 'No hay ese jugador.';
+    return '';
+  }
+
+  puedeIr(id, ranura) { return !this.razonNo(id, ranura); }
+
+  /** El relevo de un jugador: el mando libre con más batería (de cualquier lado). */
+  relevoPara(_ranura) { return this.relevo; }
 
   // --------------------------------------------------- vigilancia pasiva
 
@@ -227,6 +245,18 @@ export class GestorMandos extends EventTarget {
       if (pulso && ahora - (e._ultimoBoton || 0) > 600) {
         e._ultimoBoton = ahora;
         this._emitir('botonReserva', { entrada: e });
+      }
+      // Gatillo + botón de hombro a la vez (ZL + L o ZR + R): «soy yo», en la
+      // pantalla de vinculación. En modo simple (0x3F) los dos van en el
+      // segundo byte (0x40 hombro, 0x80 gatillo), en los dos lados; en 0x30,
+      // en el byte del lado del mando.
+      const combo = ev.reportId === 0x3f
+        ? d.byteLength >= 2 && (d.getUint8(1) & 0xc0) === 0xc0
+        : ev.reportId === 0x30 && d.byteLength >= 5 &&
+          ((d.getUint8(2) & 0xc0) === 0xc0 || (d.getUint8(4) & 0xc0) === 0xc0);
+      if (combo && (e._ultimoCombo === undefined || ahora - e._ultimoCombo > 800)) {
+        e._ultimoCombo = ahora;
+        this._emitir('registro', { entrada: e });
       }
     };
     e.device.addEventListener('inputreport', e._oyente);
@@ -296,6 +326,7 @@ export class GestorMandos extends EventTarget {
     if (!e || this._cambiando || ranura < 0 || ranura >= this.jugadores.length) return false;
     const jc = this.jugadores[ranura];
     if (this.ranuras[ranura] === id && jc.estado.conectado) return true;
+    // Regla de los lados: izquierdo y derecho son de jugadores distintos.
 
     this._cambiando = true;
     this._emitir('cambiando', { entrada: e, ranura });
@@ -366,9 +397,9 @@ export class GestorMandos extends EventTarget {
     this._emitir('inventario');
   }
 
-  /** Pasa al mando con más batería. Devuelve false si no hay a dónde ir. */
+  /** Pasa al mando del mismo lado con más batería. Devuelve false si no hay a dónde ir. */
   async cambiarARelevo(ranura = 0) {
-    const r = this.relevo;
+    const r = this.relevoPara(ranura);
     if (!r) {
       this._avisar('No hay otro mando disponible para el jugador ' + (ranura + 1) + '.', 'grave');
       return false;
@@ -543,7 +574,7 @@ export class GestorMandos extends EventTarget {
       this._emitir('perdido', { entrada: e, ranura: r });
       // Si hay relevo, entra; si no, esa ranura queda vacía y el juego sigue
       // con los jugadores que queden. Nunca se bloquea por falta de un mando.
-      if (this.relevo) this.cambiarARelevo(r);
+      if (this.relevoPara(r)) this.cambiarARelevo(r);
     }
     this._emitir('inventario');
   }
@@ -563,7 +594,7 @@ export class GestorMandos extends EventTarget {
       }
 
       // Agotado: cambiar sin preguntar, si hay a dónde.
-      if (!a.cargando && a.bateria >= 0 && escalon(a.bateria) === NIVEL.VACIA && this.relevo) {
+      if (!a.cargando && a.bateria >= 0 && escalon(a.bateria) === NIVEL.VACIA && this.relevoPara(r)) {
         this._avisar(a.nombre + ' (jugador ' + (r + 1) + ') se quedó sin batería. Cambiando al de reserva.', 'grave');
         this.cambiarARelevo(r);
         return;

@@ -31,14 +31,22 @@ Empareja los dos con antelación. En el evento no hay tiempo.
 
 1. Doble clic en `abrir.cmd`.
 2. Pulsa `F` para pantalla completa.
-3. Conecta el Joy-Con y déjalo quieto un segundo (se calibra solo).
+3. Pulsa «＋ Conectar un Joy-Con» y elígelo en la ventana de Chrome; repite con
+   «＋ Conectar otro Joy-Con» por cada mando (uno por vez; Chrome los recuerda
+   y la próxima vez ya salen en la lista). Luego «Empezar».
    **Autoriza también el de relevo**: Chrome solo puede cambiar en caliente a
    un mando que ya autorizaste antes. Si no lo haces ahora, cuando el primero
    se descargue habrá que hacerlo con gente esperando.
 4. Juega la Etapa 1 completa una vez, una carrera de El Camino con los dos
    mandos (tecla `2`) y un vuelo de El Regreso (tecla `3`).
-5. Comprueba que suena la música y que vibra al descubrir un lugar.
+5. Comprueba que suena la música, que se ven los videos y que vibra al
+   descubrir un lugar.
 6. Si el stand está ruidoso o la música estorba, `M` la silencia.
+   Si una linterna se desvía sola: **Pausa (+ / −) → «Calibrar mandos»** con los
+   mandos quietos sobre la mesa, o desde el menú principal → Controles →
+   «Calibrar mandos», que además deja probar la linterna.
+7. **Vacía la tabla de puntajes** si quedaron las pruebas: tecla `J` → abajo,
+   «Borrar tabla de puntajes» (pulsa dos veces para confirmar).
 
 Si algo falla, abre `herramientas/joycon-lab/abrir.cmd`: ahí se ve si el problema
 es el mando o el juego.
@@ -59,24 +67,35 @@ auditoría.** Se lo cuenta el juego.
 El juego trae sus propias pantallas de instrucciones antes de cada parte, así
 que no hace falta explicar los controles: solo la premisa.
 
-### El Camino, de a dos
+### Uno o dos jugadores
 
-Al terminar el mapa empieza El Camino. En su pantalla de instrucciones,
-**quien quiera competir pulsa cualquier botón del otro Joy-Con** y aparece como
-Jugador 2. Si no se une, se juega solo. Si el botón no responde, F9 → tarjeta
-«Jugador 2» → *Usar*.
+Al pulsar «Empezar el recorrido» el juego pregunta **¿Cuántos juegan?** y
+después aparece **«Vincula los mandos»**: cada visitante mantiene pulsados el
+**gatillo y el botón de hombro** de su Joy-Con (ZL + L o ZR + R). El primero en
+hacerlo es el Jugador 1; su mando vibra y enciende una luz (dos luces el
+Jugador 2). Cualquier lado vale: pueden ser dos izquierdos. Luego cada uno
+escribe su nombre con su propio mando.
+
+- Sin mando para alguien: Espacio vincula al Jugador 1 con teclado y ↑ al
+  Jugador 2 con las flechas.
+- Si un Joy-Con no aparece: tecla J → «Sincronizar un mando nuevo», y que lo
+  vuelva a intentar.
+- El Mapa lo juega siempre el Jugador 1.
+
+### El Camino
 
 > «Ahora recorren el camino. Recojan datos, y con el gatillo analicen: aparece
-> lo que estaba escondido. Gana quien encuentre más.»
+> lo que estaba escondido. Los portátiles de Power BI analizan solos. Gana
+> quien encuentre más.»
 
-### El Regreso, de a dos
+### El Regreso
 
-La última etapa es un Flappy Bird: **el gatillo bate las alas**, nada más. El
-Jugador 2 se une igual que en El Camino. Chocar no saca a nadie del juego.
+La última etapa es un Flappy Bird: **el gatillo bate las alas**, nada más.
+Chocar no saca a nadie del juego.
 
-> «Lo que encontraron hay que llevarlo de vuelta. Pasen por los aros dorados
-> para entregarlo y por los puestos de control para verificar. Sesenta
-> segundos.»
+> «Lo que encontraron sirvió para arreglar el camino: mientras más encontraron,
+> más ancho es el paso. Pasen por los aros dorados y por los puestos de
+> control. Sesenta segundos.»
 
 Y te callas. La tentación de explicar mientras juega es fuerte; explicar
 arruina el efecto.

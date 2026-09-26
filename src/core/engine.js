@@ -42,6 +42,10 @@ export class Motor {
      * de usarlo: sin sonido el juego debe seguir funcionando igual.
      */
     this.audio = null;
+    /** Reproductor de videos de etapa (cinematica.js). Opcional, lo pone main.js. */
+    this.cinematicas = null;
+    /** Menú de pausa (ui/pausa.js). Opcional, lo pone main.js. */
+    this.pausa = null;
 
     this.ancho = 0;
     this.alto = 0;
@@ -52,7 +56,10 @@ export class Motor {
     this.expedicion = {
       etapasCompletadas: [],
       puntajes: {},
-      nombreExplorador: '',
+      /** Cuántos juegan (1 o 2), elegido al empezar; 0 = sin elegir. */
+      jugadores: 0,
+      /** El nombre de cada jugador, puesto al empezar. */
+      nombres: [],
     };
 
     this._ultimo = 0;
@@ -66,9 +73,20 @@ export class Motor {
     this._ajustar();
   }
 
+  /**
+   * Tope a la resolución del lienzo (píxeles reales por píxel de pantalla).
+   * Una escena pesada en 2D lo baja al entrar y lo quita al salir (null).
+   */
+  limitarResolucion(tope) {
+    this._tope = tope || null;
+    this._ajustar();
+  }
+
   _ajustar() {
     const r = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, this._tope || Infinity);
+    /** Resolución real del lienzo ahora mismo: la usan los lienzos aparte. */
+    this.dpr = dpr;
     this.canvas.width = Math.round(r.width * dpr);
     this.canvas.height = Math.round(r.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -82,9 +100,14 @@ export class Motor {
     return this;
   }
 
-  /** Cambia de escena con fundido. Ignora llamadas durante una transición. */
-  async ir(nombre, datos = null) {
+  /**
+   * Cambia de escena con fundido. Ignora llamadas durante una transición.
+   * @param {{cinematica?: string}} [opciones] un video a ver antes de esta
+   *   escena en lugar del suyo (p. ej. «inicio» antes del recorrido).
+   */
+  async ir(nombre, datos = null, opciones = {}) {
     if (this._transicionando) return;
+    if (this.pausa) this.pausa.cerrar();
     const siguiente = this.escenas.get(nombre);
     if (!siguiente) throw new Error('Escena desconocida: ' + nombre);
 
@@ -92,6 +115,18 @@ export class Motor {
     if (this.escena) {
       await this._fundirA(1, 260);
       this.escena.salir();
+    }
+    // Video de la etapa, si la escena tiene uno y el archivo existe. Se ve con
+    // la pantalla en negro detrás; mientras dura, el reproductor hace de
+    // escena para que el gatillo lo pueda saltar.
+    const video = opciones.cinematica || siguiente.cinematica;
+    if (video && this.cinematicas) {
+      this.escena = this.cinematicas;
+      this._fundido = 1;
+      // El video trae su sonido: la música del juego se aparta mientras dura.
+      if (this.audio && this.audio.atenuarMusica) this.audio.atenuarMusica(true);
+      await this.cinematicas.reproducir(video);
+      if (this.audio && this.audio.atenuarMusica) this.audio.atenuarMusica(false);
     }
     this.escena = siguiente;
     this.nombreEscena = nombre;
@@ -115,6 +150,9 @@ export class Motor {
       paso();
     });
   }
+
+  /** ¿Está el menú de pausa abierto? Las escenas lo miran para no animar nada. */
+  get pausado() { return !!(this.pausa && this.pausa.abierta); }
 
   /** El mando del jugador 1. Las escenas de un jugador solo usan este. */
   get jc() { return this.jugadores[0]; }
@@ -165,15 +203,22 @@ export class Motor {
     this.tiempo += dt;
 
     // Fotogramas por segundo, suavizados. Si en el stand va mal el mando, lo
-    // primero es saber si el equipo aguanta: esto sale en el chip y en F9.
+    // primero es saber si el equipo aguanta: esto sale en el chip y en el panel de mandos.
     if (dt > 0) this.fps += ((1 / dt) - this.fps) * 0.05;
 
     const c = this.ctx;
     c.clearRect(0, 0, this.ancho, this.alto);
 
-    if (this.escena) {
-      this.escena.actualizar(dt);
+    if (this.pausado) {
+      // En pausa la escena no avanza: solo se dibuja, quieta, bajo el menú.
+      this.pausa.actualizar(dt);
+      if (this.escena) this.escena.dibujar(c);
+      this.pausa.dibujar(c);
+    } else if (this.escena) {
+      if (this.pausa) this.pausa.vigilar();
+      if (!this.pausado) this.escena.actualizar(dt);
       this.escena.dibujar(c);
+      if (this.pausado) this.pausa.dibujar(c);
     }
 
     // Las pulsaciones se acumulan en el driver reporte a reporte; aquí, una vez
@@ -184,7 +229,7 @@ export class Motor {
     if (this._fundido > 0.001) {
       c.save();
       c.globalAlpha = this._fundido;
-      c.fillStyle = '#05070c';
+      c.fillStyle = '#0b0202';     // el rojo casi negro de los menús (render.js, fondoMenu)
       c.fillRect(0, 0, this.ancho, this.alto);
       c.restore();
     }

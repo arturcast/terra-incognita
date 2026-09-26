@@ -5,7 +5,7 @@
  * sostenga jugando. Se simulan tres formas de jugar sobre el mismo camino:
  *
  *   cómodo        — carril del centro, nunca analiza.
- *   solo controles— persigue los carteles ✓.
+ *   solo Power BI — persigue los tableros de Power BI (analizan solos).
  *   explorador    — recoge datos, analiza, va a por lo que se revela.
  *
  * Si el diseño está bien, los dos primeros no encuentran nada y el explorador
@@ -18,7 +18,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CAMINO, ESTACIONES, generarCamino, Carrera, carrilDesdePuntero, ganador,
+  CAMINO, ESTACIONES, generarCamino, Carrera, carrilDesdePuntero, ganador, elegirEstaciones,
 } from '../src/juego/carrera.js';
 
 const DT = 1 / 60;
@@ -154,11 +154,15 @@ test('quien se queda en lo cómodo y no analiza no encuentra nada', () => {
   assert.equal(r.carrilComodo, true);
 });
 
-test('perseguir los carteles ✓ tampoco encuentra nada', () => {
+test('los tableros de Power BI analizan solos, pero están fuera del camino cómodo', () => {
   const { r } = jugar(soloControles);
-  console.log(`    solo controles: ${r.controles} controles revisados, ${r.hallazgos} hallazgos`);
+  console.log(`    solo Power BI: ${r.controles} tableros, ${r.analisisPB} análisis gratis, ${r.hallazgos} hallazgos`);
   assert.ok(r.controles > 0);
-  assert.equal(r.hallazgos, 0);
+  assert.ok(r.analisisPB > 0, 'tomar un tablero debe analizar sin gastar datos');
+  // Ninguno en el carril del centro: quien se queda ahí no los toma.
+  for (let semilla = 1; semilla <= 40; semilla++) {
+    assert.ok(generarCamino(semilla).filter((o) => o.tipo === 'control').every((o) => o.carril !== 1));
+  }
 });
 
 test('ningún hallazgo es imposible: ni antes de poder tener datos, ni pegado a otro', () => {
@@ -220,6 +224,90 @@ test('el tablero cuenta, estación por estación, lo encontrado frente a lo que 
   assert.ok(r.porEstacion.every((e) => e.encontrados <= e.existentes));
   const montana = r.porEstacion[2];
   assert.equal(montana.existentes, 4, 'La Montaña Perdida es donde más hay escondido');
+});
+
+// ======================================================================
+// LOS DOS TRAMOS: los que el visitante priorizó en El Mapa
+// ======================================================================
+
+const ids = (lista) => lista.map((e) => e.id);
+const lugares = (...l) => l.map((id) => ({ id }));
+
+test('se juegan los dos tramos de la cadena que más prioridad tuvieron en El Mapa', () => {
+  // Mandó equipos a la torre (no es de la cadena), al caudal, a la fundición,
+  // a la montaña y a la represa: los dos primeros de la cadena son caudal y montaña.
+  const e = elegirEstaciones(lugares('torre', 'caudal', 'fundicion', 'montana', 'represa'));
+  assert.deepEqual(ids(e), ['caudal', 'montana']);
+});
+
+test('el orden de los tramos es el de la prioridad, no el de la cadena', () => {
+  assert.deepEqual(ids(elegirEstaciones(lugares('represa', 'manantial'))), ['represa', 'manantial']);
+});
+
+test('si priorizó menos de dos tramos de la cadena, se completa con el orden de siempre', () => {
+  assert.deepEqual(ids(elegirEstaciones(lugares('torre', 'montana', 'faro'))), ['montana', 'manantial']);
+  assert.deepEqual(ids(elegirEstaciones(lugares('torre', 'faro', 'isla'))), ['manantial', 'ramales']);
+});
+
+test('sin datos de El Mapa (entrando directo con la tecla 2) también hay dos tramos', () => {
+  assert.deepEqual(ids(elegirEstaciones(undefined)), ['manantial', 'ramales']);
+  assert.deepEqual(ids(elegirEstaciones([])), ['manantial', 'ramales']);
+});
+
+test('con dos tramos, el camino solo pasa por esos dos y dura lo mismo', () => {
+  const dos = elegirEstaciones(lugares('montana', 'caudal'));
+  const objs = generarCamino(7, dos);
+  assert.deepEqual(objs.filter((o) => o.tipo === 'estacion').map((o) => o.estacion), [0, 1]);
+  const ocultos = objs.filter((o) => o.tipo === 'oculto').length;
+  assert.equal(ocultos, 4 + 3, 'La Montaña Perdida (4) y El Gran Caudal (3)');
+
+  const c = new Carrera(objs, dos);
+  let t = 0;
+  while (!c.terminada && t < 200) { c.actualizar(DT, explorador(c).carril, explorador(c).analizar); t += DT; }
+  assert.ok(t > 55 && t < 85, `duró ${t.toFixed(0)} s`);
+  const r = c.resultado();
+  assert.deepEqual(r.porEstacion.map((e) => e.nombre), ['La Montaña Perdida', 'El Gran Caudal']);
+});
+
+test('con dos tramos, la lección se sostiene: lo cómodo no encuentra nada y explorar sí', () => {
+  let h = 0, e = 0;
+  for (let semilla = 1; semilla <= 60; semilla++) {
+    const dos = [ESTACIONES[semilla % 5], ESTACIONES[(semilla + 2) % 5]];
+    const jugarCon = (estrategia) => {
+      const c = new Carrera(generarCamino(semilla, dos), dos);
+      let t = 0;
+      while (!c.terminada && t < 200) { const d = estrategia(c); c.actualizar(DT, d.carril, d.analizar); t += DT; }
+      return c.resultado();
+    };
+    assert.equal(jugarCon(comodo).hallazgos, 0, `semilla ${semilla}: lo cómodo encontró algo`);
+    const r = jugarCon(explorador);
+    h += r.hallazgos; e += r.existentes;
+  }
+  console.log(`    dos tramos, explorador: ${Math.round(h / e * 100)} %`);
+  assert.ok(h / e >= 0.75);
+});
+
+test('mientras se lee «Entrando a…», el tramo nuevo no trae muros ni nada escondido', () => {
+  for (let semilla = 1; semilla <= 60; semilla++) {
+    const dos = [ESTACIONES[semilla % 5], ESTACIONES[(semilla + 1) % 5]];
+    const objs = generarCamino(semilla, dos);
+    const inicio = objs.find((o) => o.tipo === 'estacion' && o.estacion === 1).s - 3;
+    const enPausa = objs.filter((o) => (o.tipo === 'muro' || o.tipo === 'oculto') &&
+      o.s >= inicio && o.s < inicio + CAMINO.pausaTramo);
+    assert.equal(enPausa.length, 0, `semilla ${semilla}: obstáculo durante el letrero`);
+  }
+});
+
+test('lo que no se recoge pasa de largo y sale de la pantalla; lo recogido desaparece', () => {
+  const c = new Carrera([
+    { tipo: 'muro', s: 10, carril: 0, estacion: 0, texto: 'x' },
+    { tipo: 'dato', s: 10, carril: 1, estacion: 0 },
+  ]);
+  while (c.distancia < 14) c.actualizar(DT, 1, false);     // ya pasó los dos
+  const vis = c.visibles().map(({ o }) => o.tipo);
+  assert.deepEqual(vis, ['muro'], 'el muro de al lado se sigue viendo; el dato recogido, no');
+  while (c.distancia < 10 + CAMINO.atras + 1) c.actualizar(DT, 1, false);
+  assert.equal(c.visibles().length, 0, 'y al quedar bien atrás deja de dibujarse');
 });
 
 test('empate solo si coinciden hallazgos y puntos', () => {

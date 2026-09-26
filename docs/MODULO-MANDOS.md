@@ -95,7 +95,7 @@ GestorMandos                     ← nuevo, src/core/mandos.js
   └── eventos: 'cambio' | 'bateria' | 'perdido' | 'recuperado'
 
 PanelMandos                      ← nuevo, src/ui/panel-mandos.js
-  └── superposición HTML, la abre el operador con F9
+  └── superposición HTML, la abre el operador con la tecla J (o F9)
 ```
 
 ### Por qué el panel es HTML y no lienzo
@@ -161,11 +161,11 @@ desconocido → emparejado → autorizado → abierto → activo
 
 ## 5. El panel del operador
 
-Se abre con **F9**. Nunca aparece solo, y nunca lo ve el visitante salvo que el
+Se abre con la tecla **J** (o **F9**; en portátiles las teclas F suelen ser volumen o brillo). Nunca aparece solo, y nunca lo ve el visitante salvo que el
 operador lo llame.
 
 ```
-┌─ MANDOS ─────────────────────────────── F9 cierra ─┐
+┌─ MANDOS ─────────────────────────────── J cierra ──┐
 │                                                     │
 │  ● Joy-Con (R)   EN JUEGO      ████░ baja   67 Hz  │
 │      quedan ~4 h · probar · soltar                  │
@@ -263,7 +263,7 @@ Sin interfaz: se prueba desde la consola con `TI.mandos`.
 **Esfuerzo:** medio. Es donde está la dificultad real.
 
 ### Fase 2 — Panel del operador
-Superposición HTML con F9: lista, activar, soltar, autorizar.
+Superposición HTML con J (o F9): lista, activar, soltar, autorizar.
 **Evita:** depender de quien construyó esto para cualquier gestión.
 **Esfuerzo:** bajo.
 
@@ -343,7 +343,7 @@ toman con los umbrales, que son un dato real.
 | `src/core/joycon.js` | Añadir `cambiarDispositivo()`. Separar la secuencia de arranque para poder reutilizarla |
 | `src/core/mandos.js` | **Nuevo.** `GestorMandos` |
 | `src/ui/panel-mandos.js` | **Nuevo.** Panel del operador |
-| `src/main.js` | Instanciar el gestor, atar F9, exponer `TI.mandos` |
+| `src/main.js` | Instanciar el gestor, atar J (y F9), exponer `TI.mandos` |
 | `index.html` | Contenedor del panel y sus estilos |
 | `docs/OPERACION-STAND.md` | Autorizar los dos mandos en la prueba de humo; cómo usar el panel |
 | `docs/PROTOCOLO-JOYCON.md` | Tabla de los cinco niveles de batería |

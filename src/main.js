@@ -15,6 +15,13 @@ import { Motor } from './core/engine.js';
 import { Audio } from './core/audio.js';
 import { GestorMandos, ETIQUETA_NIVEL, COLOR_NIVEL } from './core/mandos.js';
 import { PanelMandos } from './ui/panel-mandos.js';
+import { Cinematicas } from './core/cinematica.js';
+import { Pausa } from './ui/pausa.js';
+import { cargarTexturasMenu } from './core/render.js';
+
+// Texturas de los menús: se cargan ya, sin esperar. Mientras llegan (o si
+// fallan), los menús se dibujan por código.
+cargarTexturasMenu();
 import { EscenaIntro } from './juego/escenas/intro.js';
 import { EscenaMapa } from './juego/escenas/mapa.js';
 import { EscenaCierre } from './juego/escenas/cierre.js';
@@ -22,6 +29,9 @@ import { EscenaPrueba2J } from './juego/escenas/prueba2j.js';
 import { EscenaCamino } from './juego/escenas/camino.js';
 import { EscenaRuta } from './juego/escenas/ruta.js';
 import { EscenaRegreso } from './juego/escenas/regreso.js';
+import { EscenaRecuento } from './juego/escenas/recuento.js';
+import { EscenaJugadores } from './juego/escenas/jugadores.js';
+import { EscenaCalibrar } from './juego/escenas/calibrar.js';
 
 const lienzo = document.getElementById('lienzo');
 const capaEnlace = document.getElementById('enlace');
@@ -39,14 +49,19 @@ motor.audio = audio;
 // Las escenas de dos jugadores escuchan al gestor para que el Jugador 2 se una
 // pulsando un botón de su mando, sin pasar por el panel.
 motor.gestor = gestor;
+// Videos de etapa (assets/cinematicas/). Si no hay archivo, se salta solo.
+motor.cinematicas = new Cinematicas(document.getElementById('cinematica'), [jc, jc2]);
 
 motor
   .registrar('intro', new EscenaIntro(motor))
+  .registrar('jugadores', new EscenaJugadores(motor))
+  .registrar('calibrar', new EscenaCalibrar(motor))
   .registrar('mapa', new EscenaMapa(motor))
   .registrar('cierre', new EscenaCierre(motor))
   .registrar('camino', new EscenaCamino(motor))
   .registrar('ruta', new EscenaRuta(motor))
   .registrar('regreso', new EscenaRegreso(motor))
+  .registrar('recuento', new EscenaRecuento(motor))
   .registrar('prueba2j', new EscenaPrueba2J(motor));
 
 const panel = new PanelMandos(gestor, jc, motor);
@@ -64,29 +79,119 @@ async function arrancar() {
   motor.ir('intro');
 }
 
-document.getElementById('btnEnlazar').addEventListener('click', async () => {
+/**
+ * Pantalla completa al entrar. El navegador solo la concede dentro de un clic,
+ * así que se pide lo primero, antes de cualquier espera (conectar el mando
+ * tarda y el permiso del clic caduca). La tecla F la sigue alternando.
+ */
+function pantallaCompleta() {
+  if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+  document.documentElement.requestFullscreen()
+    .then(bloquearEsc)
+    .catch(() => {});
+}
+
+/**
+ * En pantalla completa, Chrome usa Esc para salir de ella y el juego no se
+ * entera. Con el bloqueo de teclado (API de Chrome para juegos), Esc llega al
+ * juego y abre la pausa; para salir de pantalla completa hay que MANTENER Esc
+ * (Chrome lo avisa arriba) o usar la opción del menú de pausa.
+ */
+function bloquearEsc() {
+  if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(['Escape']).catch(() => {});
+}
+
+let salidaAdrede = false;
+function salirDePantallaCompleta() {
+  if (!document.fullscreenElement) return;
+  salidaAdrede = true;
+  document.exitFullscreen().catch(() => {});
+}
+
+// Si se sale de pantalla completa en plena partida sin pedirlo (manteniendo
+// Esc), se pausa: quien lo hizo seguramente quería parar.
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && arrancado && !salidaAdrede) pausa.abrir();
+  if (!document.fullscreenElement) salidaAdrede = false;
+});
+
+const pausa = new Pausa(motor, {
+  pantallaCompleta,
+  salirDePantallaCompleta,
+  estaEnPantallaCompleta: () => !!document.fullscreenElement,
+});
+motor.pausa = pausa;
+// El panel de mandos sale de pantalla completa antes de abrir la ventana de permisos.
+motor.salirDePantallaCompleta = salirDePantallaCompleta;
+
+/**
+ * Conectar los Joy-Con, uno por uno.
+ *
+ * La ventana de permisos de Chrome deja elegir UN mando cada vez (así es
+ * WebHID, no se puede cambiar) y solo sale si se pide en el mismo instante
+ * del clic: cualquier espera antes (revisar mandos, pasar a pantalla
+ * completa) la cancela en silencio. Por eso:
+ *   - «＋ Conectar un Joy-Con» abre la ventana, ya, y al volver NO entra al
+ *     juego: se queda aquí mostrando la lista, para conectar otro;
+ *   - «Empezar» entra cuando ya están todos.
+ * Chrome recuerda cada permiso en este equipo: las veces siguientes los
+ * mandos aparecen solos en la lista y basta con «Empezar».
+ */
+const listaMandos = document.getElementById('listaMandos');
+const btnEnlazar = document.getElementById('btnEnlazar');
+const btnEmpezar = document.getElementById('btnEmpezar');
+
+function pintarMandos() {
+  if (arrancado) return;
+  const inv = gestor.inventario;
+  if (!inv.length) {
+    listaMandos.innerHTML = '<div class="nota">Ningún Joy-Con conectado todavía. Pulsa «Conectar un Joy-Con» ' +
+      'una vez por cada mando.</div>';
+  } else {
+    listaMandos.innerHTML = inv.map((m) => {
+      const mal = m.estado === 'perdido';
+      return '<span class="ficha' + (mal ? ' mal' : '') + '">' + (mal ? '✗ ' : '✓ ') + m.nombre +
+        (mal ? ' · no responde' : '') + '</span>';
+    }).join('') + '<div class="nota">¿Juegan más? Conecta otro. Chrome los recuerda: la próxima vez ya aparecen aquí.</div>';
+  }
+  btnEnlazar.textContent = inv.length ? '＋ Conectar otro Joy-Con' : '＋ Conectar un Joy-Con';
+  btnEnlazar.classList.toggle('principal', !inv.length);
+  btnEmpezar.classList.toggle('oculto', !inv.length);
+}
+gestor.addEventListener('inventario', pintarMandos);
+
+btnEnlazar.addEventListener('click', async () => {
   aviso.textContent = '';
   if (!gestor.disponible) {
     aviso.textContent = 'Este navegador no expone WebHID. Abre la página en Chrome o Edge.';
     return;
   }
   try {
-    // Si ya hay alguno autorizado de una sesión anterior, no molestamos con el
-    // selector: se entra directo con el que tenga más batería.
-    await gestor.refrescar();
-    const previo = gestor.mejorDisponible();
-    let id = previo ? previo.id : null;
-    if (!id) id = await gestor.autorizar();
+    const id = await gestor.autorizar();        // la ventana de Chrome, ya, dentro del clic
     if (!id) { aviso.textContent = 'No elegiste ningún mando.'; return; }
+    await gestor.refrescar();
+    pintarMandos();
+    const m = gestor.inventario.find((x) => x.id === id);
+    if (m && m.estado === 'perdido') {
+      aviso.textContent = m.nombre + ' no respondió. Pulsa un botón del mando para despertarlo y conéctalo otra vez. ' +
+        'Si sigue igual, cierra Steam o BetterJoy.';
+    }
+  } catch (e) {
+    aviso.textContent = 'No se pudo abrir el Joy-Con: ' + e.message;
+  }
+});
 
-    const ok = await gestor.activar(id);
-    if (!ok) {
-      aviso.textContent = 'El mando no respondió. Pulsa un botón para despertarlo y reintenta, ' +
-        'o cierra Steam o BetterJoy si los tienes abiertos.';
+btnEmpezar.addEventListener('click', async () => {
+  pantallaCompleta();                           // dentro del clic: aquí sí se puede
+  aviso.textContent = '';
+  try {
+    // El mejor mando entra como Jugador 1, para manejar los menús; quién es
+    // quién de verdad se decide después, en «Vincula los mandos».
+    const mejor = gestor.mejorDisponible();
+    if (mejor && !(await gestor.activar(mejor.id, 0))) {
+      aviso.textContent = mejor.nombre + ' no respondió. Pulsa un botón del mando y vuelve a pulsar «Empezar».';
       return;
     }
-    // No se vuelve a calibrar aquí: activar() ya lo hizo, y repetirlo justo
-    // cuando la persona coge el mando medía el movimiento de la mano como sesgo.
     await arrancar();
     avisarSiFaltaRelevo();
   } catch (e) {
@@ -94,7 +199,7 @@ document.getElementById('btnEnlazar').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('btnRaton').addEventListener('click', arrancar);
+document.getElementById('btnRaton').addEventListener('click', () => { pantallaCompleta(); arrancar(); });
 
 /**
  * El cambio en caliente solo puede saltar a un mando **ya autorizado**. Si solo
@@ -104,28 +209,30 @@ document.getElementById('btnRaton').addEventListener('click', arrancar);
 function avisarSiFaltaRelevo() {
   if (gestor.inventario.length >= 2) return;
   const banda = document.getElementById('bandaAviso');
-  banda.textContent = 'Solo hay un mando autorizado. Pulsa F9 y autoriza el de relevo antes de empezar.';
+  banda.textContent = 'Solo hay un mando autorizado. Pulsa J y autoriza el de relevo antes de empezar.';
   banda.className = 'banda aviso';
   setTimeout(() => { banda.className = 'banda oculto'; }, 11000);
 }
 
-// Deja el inventario listo antes de que nadie toque nada.
-gestor.refrescar().then(() => {
-  if (gestor.inventario.length) {
-    document.getElementById('btnEnlazar').textContent = 'Entrar con el Joy-Con conectado';
-  }
-});
+// Deja el inventario listo antes de que nadie toque nada: los mandos ya
+// autorizados en sesiones anteriores aparecen solos en la lista.
+pintarMandos();
+gestor.refrescar().then(pintarMandos);
 
 // --------------------------------------------------------------- teclado
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
 
-  if (e.key === 'F9') { e.preventDefault(); panel.alternar(); return; }
+  // Panel de mandos: tecla J (de Joy-Con). F9 también sirve, pero en los
+  // portátiles las teclas F suelen ser volumen o brillo y no llegan al juego.
+  if (e.key === 'F9' || (k === 'j' && !e.ctrlKey && !e.altKey && !e.metaKey)) {
+    e.preventDefault(); panel.alternar(); return;
+  }
   if (e.key === 'Escape' && panel.abierto) { panel.alternar(false); return; }
 
   if (k === 'f') {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen().catch(() => {});
+    if (document.fullscreenElement) salirDePantallaCompleta();
+    else pantallaCompleta();
   }
   if (k === 'c' && jc.estado.conectado) jc.calibrar();
   // R recentra la linterna de la escena actual, no solo los ángulos del mando.
@@ -139,7 +246,9 @@ window.addEventListener('keydown', (e) => {
   if (k === '3' && arrancado) motor.ir('regreso');
   // 0: la pantalla del recorrido, para mostrarla sin jugar una etapa entera.
   if (k === '0' && arrancado) motor.ir('ruta');
-  if (e.key === 'Escape' && motor.escena) motor.ir('intro');
+  // Esc pausa (no saca del juego). Con la pausa abierta, el propio menú lo
+  // atrapa antes y la cierra. Volver al inicio es una opción de la pausa.
+  if (e.key === 'Escape' && arrancado) pausa.abrir();
 });
 
 // ----------------------------------------- chip de estado para el operador
@@ -180,7 +289,7 @@ setInterval(() => {
     ' · <b>' + Math.round(motor.fps) + '</b> fps' +
     (r ? ' · relevo listo' : (gestor.jugadoresConectados < 2 ? ' · <span style="color:#e8b04b">sin relevo</span>' : '')) +
     ' · <span>' + (audio.silenciado ? '🔇' : '🔊') + '</span>' +
-    ' · <span class="pm-tenue">F9</span>';
+    ' · <span class="pm-tenue">J: mandos</span>';
 }, 400);
 
 // Para depurar y para las pruebas descritas en docs/MODULO-MANDOS.md.

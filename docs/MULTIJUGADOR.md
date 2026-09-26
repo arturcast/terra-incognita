@@ -12,7 +12,7 @@ Regreso en un mismo cielo compartido.
 | `motor.jugadores`, `motor.jugadoresActivos` | `src/core/engine.js` |
 | Pantalla partida: `motor.ranura(i, n)`, `motor.enRanura(i, n, fn)` | `src/core/engine.js` |
 | `gestor.ranuras`, `activar(id, ranura)`, cambio en caliente por jugador | `src/core/mandos.js` |
-| Asignar Jugador 1 / Jugador 2 | Panel F9: tarjetas **JUGADORES** arriba del todo |
+| Asignar Jugador 1 / Jugador 2 | Panel de mandos (tecla J): tarjetas **JUGADORES** arriba del todo |
 | Sala de prueba de dos jugadores (y plantilla) | `src/juego/escenas/prueba2j.js`, tecla **P** |
 | Pruebas | `tests/multijugador.test.js` |
 
@@ -47,7 +47,7 @@ El jugador 1 es siempre `motor.jc`: las escenas de un jugador no cambian.
 Mientras un mando está de reserva, el gestor lo vigila en modo simple (0x3F)
 para leer la batería. Si en ese modo alguien pulsa un botón, el gestor emite
 `'botonReserva'` con el id del mando. `camino.js` lo escucha durante las
-instrucciones y lo activa como Jugador 2. El panel F9 sigue siendo el plan B.
+instrucciones y lo activa como Jugador 2. El panel de mandos (tecla J) sigue siendo el plan B.
 
 El ejemplo completo es `src/juego/escenas/camino.js`: los dos corren **la
 misma semilla** (mismo camino), cada uno con su `Carrera`; si el Jugador 2 se
@@ -214,3 +214,32 @@ veces. Es la diferencia entre escribir cuatro minijuegos y escribir ocho.
    mensaje del área: analítica y muestreo.
 5. Etapas 4 y 6.
 6. Etapas 2 y 5, de un jugador.
+
+
+## Vincular los mandos (2026-09-26)
+
+Pedido del usuario: poder tener **varios Joy-Con conectados a la vez** y, en el
+juego, un menú **estilo Nintendo Switch** donde cada jugador dice «este es mi
+mando». Reglas:
+
+- **Un Joy-Con por jugador, de cualquier lado.** Un mando nunca es de dos
+  jugadores, y nada del juego necesita dos mandos juntos.
+- Tras elegir «Un jugador» o «Dos jugadores», la pantalla **Vincula los mandos**
+  (`src/juego/escenas/jugadores.js`) muestra una tarjeta por jugador. Cada uno
+  mantiene pulsados **el gatillo y el botón de hombro** (ZL + L o ZR + R): el
+  primero es el Jugador 1. El mando entra en su ranura, vibra y enciende las
+  luces del riel con su número (`JoyCon.luzJugador`).
+- Los Joy-Con que no están en juego siguen abiertos en reserva (modo simple
+  0x3F). `GestorMandos` detecta ahí el gatillo + hombro (segundo byte del
+  reporte: 0x40 hombro, 0x80 gatillo, igual en los dos lados) y emite el evento
+  `registro`. Los que ya están en una ranura se leen con `jc.pulsado()`.
+- **Respaldo de teclado:** Espacio vincula al Jugador 1 (WASD) y ↑ al Jugador 2
+  (flechas). Quien juega con teclado deja su ranura libre.
+- Al escribir el nombre, **cada jugador escribe solo con su propio mando**.
+- El relevo automático (batería agotada o desconexión) toma cualquier mando
+  libre, del lado que sea.
+
+Pruebas: `tests/joycon-flujo.test.js` (la vinculación con dos Joy-Con del mismo
+lado, con Joy-Con + teclado, con un mando de reserva, y que un mando no escribe
+por el otro jugador) y `tests/multijugador.test.js` (dos mandos del mismo lado;
+el evento `registro`).

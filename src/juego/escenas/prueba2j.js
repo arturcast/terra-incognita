@@ -1,6 +1,6 @@
 /**
  * prueba2j.js — Sala de prueba de dos jugadores. Para el operador, no para el
- * visitante: se abre con la tecla P o desde el panel F9.
+ * visitante: se abre con la tecla P o desde el panel de mandos (tecla J).
  *
  * Existe para comprobar en el navegador, con los mandos reales, todo lo que
  * necesitan las etapas de dos jugadores antes de construir ninguna:
@@ -104,7 +104,7 @@ export class EscenaPrueba2J extends Escena {
       c.textBaseline = 'middle';
       c.font = '20px ' + FUENTE.interfaz;
       c.fillStyle = PALETA.tintaTenue;
-      c.fillText('No hay ningún mando en juego. Pulsa F9 y asigna Jugador 1 y Jugador 2.', W / 2, H / 2);
+      c.fillText('No hay ningún mando en juego. Pulsa J y asigna Jugador 1 y Jugador 2.', W / 2, H / 2);
       return;
     }
 

@@ -15,10 +15,15 @@
 import { Escena } from '../../core/engine.js';
 import { Puntero, Acciones } from '../../core/input.js';
 import { Briefing, partirLineas } from '../../core/briefing.js';
-import { PALETA, FUENTE, rectRedondeado, grano, suave, limitar } from '../../core/render.js';
 import {
-  CAMINO, ESTACIONES, generarCamino, Carrera, carrilDesdePuntero, ganador,
+  PALETA, FUENTE, MENU, rectRedondeado, grano, suave, limitar,
+  cajaMenu, tituloMenu, textoMenu, cuentaMenu, fondoMenu,
+} from '../../core/render.js';
+import {
+  CAMINO, generarCamino, Carrera, carrilDesdePuntero, ganador, elegirEstaciones,
 } from '../carrera.js';
+import { dibujarRevelacion } from '../../ui/revelacion.js';
+import { participantesDe, dibujarUnion, eleccion, nombreDe, textoGana, unirJugador2 } from '../../ui/jugadores.js';
 
 const COLOR_J = [PALETA.oro, PALETA.senal];
 /**
@@ -29,21 +34,29 @@ const COLOR_J = [PALETA.oro, PALETA.senal];
  */
 const BLOQUEO_TABLERO = 3;
 /**
- * Si la pintura 3D no llega a estos fotogramas por segundo durante este rato,
- * se vuelve a la vista 2D en mitad de la carrera. Más vale una etapa fea que
- * una etapa a tirones delante de la gente.
+ * La vista 2D es solo para cuando el 3D no existe (sin WebGL, pruebas de
+ * Node). Antes se pasaba a ella si bajaban los fotogramas, y en el stand eso
+ * se veía como «el juego se rompió»: puntos sobre negro, sin personaje. Ahora
+ * el 3D se queda siempre; si va lento baja su resolución (vista3d.js), y solo
+ * si falla de verdad muchos fotogramas seguidos, o pierde la tarjeta gráfica
+ * y no vuelve, se vuelve a crear.
  */
-const FPS_MINIMO = 40;
-const SEGUNDOS_LENTOS = 3;
+const FALLOS_SEGUIDOS = 30;
+const SEGUNDOS_SIN_CONTEXTO = 2;
+/**
+ * Segundos que dura el letrero «Entrando a…» al cambiar de tramo: lo justo
+ * para leerlo. En ese trecho el camino no trae muros (CAMINO.pausaTramo).
+ */
+const DURACION_TRANSICION = 2.6;
 const AZUL_DATO = '#5aa9e6';
 const ROJO = '#ff5a4a';
 
 /** Lo que el visitante hizo, traducido a lo que hace el área. Pantalla final. */
 const ASI_TRABAJAMOS = [
   { que: '◆ Los datos crudos', es: 'Sacamos la información directo de la base de datos, no de lo que el proceso reporta de sí mismo.' },
-  { que: 'La lente', es: 'La analizamos con herramientas como Power BI y cruzamos las cifras del proceso con las nuestras.' },
-  { que: '✓ Los carteles', es: 'Revisamos los controles y el manual… pero lo que importa casi nunca está ahí.' },
-  { que: 'El camino completo', es: 'Recorremos el proceso de principio a fin: desde donde entra el gas hasta donde llega la plata.' },
+  { que: 'La lente', es: 'Analizar: mirar los datos con intención. Sin datos no hay análisis, y sin análisis no se ve nada.' },
+  { que: 'El tablero de Power BI', es: 'Con él cruzamos las cifras del proceso con las nuestras: por eso, al tomarlo, apareció lo que estaba escondido.' },
+  { que: 'Los dos tramos', es: 'Vamos a donde el plan dijo que más pesaba, en ese orden, y recorremos el proceso de principio a fin.' },
   { que: 'Lo que brilló en rojo', es: 'Se llama HALLAZGO: lo escondido, lo que nadie estaba viendo. Con él se construyen las conclusiones.' },
   { que: 'Los muros', es: 'Y sí: siempre aparece una excusa en el camino.' },
 ];
@@ -53,6 +66,8 @@ export class EscenaCamino extends Escena {
 
   constructor(motor) {
     super(motor);
+    /** Video previo a las instrucciones: assets/cinematicas/camino.mp4 (opcional). */
+    this.cinematica = 'camino';
     this.punteros = motor.jugadores.map((j) => new Puntero(j));
     this.acciones = motor.jugadores.map((j) => new Acciones(j));
 
@@ -64,7 +79,8 @@ export class EscenaCamino extends Escena {
         'Apunta el Joy-Con hacia un carril para moverte: izquierda, centro o derecha.',
         'Recoge los ◆ azules: son los datos tal como salen de la fuente.',
         'Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino. Lo que brille en rojo, atrápalo.',
-        'Los carteles «✓ Todo en orden» suman poco. Esquiva los muros: son las excusas de siempre, y te hacen perder datos.',
+        'Atrapa los tableros de Power BI: cruzan los datos por ti y analizan el camino sin gastar tus ◆. Esquiva los muros: son las excusas de siempre, y te hacen perder datos.',
+        'Con teclado: Jugador 1 con A/D y W (o Espacio); Jugador 2 con las flechas ← → y ↑. Si juegas solo, también valen las flechas.',
       ],
       aviso: 'Pueden jugar dos, en el mismo camino. Gana quien encuentre más de lo que estaba escondido.',
       continuar: 'Jugador 1: pulsa {B} para empezar',
@@ -79,19 +95,48 @@ export class EscenaCamino extends Escena {
      */
     this.vista3d = null;
     this._dt = 1 / 60;
-    this._lentos = 0;
+    this._fallos = 0;
+    this._sinContexto = 0;
+    this._rearmando = false;
 
-    this.teclado = { carril: 1, analizar: false, confirmar: false };
+    // Teclado, para uno o dos jugadores:
+    //   Jugador 1: A/D cambian de carril; W o Espacio analizan.
+    //   Jugador 2: ←/→ cambian de carril; ↑ analiza. Se une pulsando ↑ en las
+    //   instrucciones (igual que con el Joy-Con, pulsando un botón).
+    // Mientras nadie se una como Jugador 2, las flechas también mueven al 1:
+    // quien juega solo puede usar las que prefiera. Y cualquiera de los dos
+    // puede ser un Joy-Con en lugar del teclado.
+    this.teclado = { carril: 1, analizar: false, confirmar: false, activo: false };
+    this.teclado2 = { carril: 1, analizar: false, unido: false };
     this.raton = { x: null, clic: false };
     this._onTecla = (e) => {
-      if (e.key === 'ArrowLeft') this.teclado.carril = Math.max(0, this.teclado.carril - 1);
-      else if (e.key === 'ArrowRight') this.teclado.carril = Math.min(2, this.teclado.carril + 1);
-      else if (e.key === ' ') { this.teclado.analizar = true; this.teclado.confirmar = true; }
-      else if (e.key === 'Enter') this.teclado.confirmar = true;
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const t2 = this.teclado2;
+      const flechasDelDos = t2.unido;
+      if (k === 'a' || (k === 'ArrowLeft' && !flechasDelDos)) {
+        this.teclado.carril = Math.max(0, this.teclado.carril - 1);
+        this.teclado.activo = true;
+      } else if (k === 'd' || (k === 'ArrowRight' && !flechasDelDos)) {
+        this.teclado.carril = Math.min(2, this.teclado.carril + 1);
+        this.teclado.activo = true;
+      } else if (k === 'ArrowLeft') {
+        t2.carril = Math.max(0, t2.carril - 1);
+      } else if (k === 'ArrowRight') {
+        t2.carril = Math.min(2, t2.carril + 1);
+      } else if (k === 'ArrowUp') {
+        // ↑ une al Jugador 2 solo si no se eligió al empezar cuántos juegan.
+        if (this.fase === 'guia' && !t2.unido && !this._j2PorMando() && !eleccion(this.motor)) this._unirTeclado();
+        else if (t2.unido) t2.analizar = true;
+        else { this.teclado.analizar = true; this.teclado.confirmar = true; }
+      } else if (k === ' ' || k === 'w') {
+        this.teclado.analizar = true;
+        this.teclado.confirmar = true;
+      } else if (k === 'Enter') this.teclado.confirmar = true;
     };
     this._onMover = (e) => {
       const r = this.motor.canvas.getBoundingClientRect();
       this.raton.x = e.clientX - r.left;
+      this.teclado.activo = false;       // quien mueve el ratón, juega con ratón
     };
     this._onClic = () => { this.raton.clic = true; };
     this._onBotonReserva = (ev) => this._unirse(ev.detail.entrada);
@@ -104,14 +149,30 @@ export class EscenaCamino extends Escena {
     this.fase = 'guia';
     this.t = 0;
     this.tFase = 0;
-    this.guia.reiniciar();
     this.carreras = [];
     this.participantes = [];
+    this.teclado2 = { carril: 1, analizar: false, unido: false };
+    // Si al empezar eligieron jugar dos, el 2 ya está dentro: con su Joy-Con
+    // si tiene uno, y si no, con las flechas.
+    if (eleccion(this.motor) === 2 && !this._j2PorMando()) this.teclado2.unido = true;
     this.avisos = [[], []];
+    this.saltos = [[], []];       // «+1 ◆» que suben desde el explorador al recoger algo
+    this.transiciones = [0, 0];   // 1 = recién cruzó a un tramo nuevo, decae a 0
     this.aviso2 = null;
     this.semilla = (Math.random() * 1e9) | 0;
+
+    // Las dos estaciones a jugar: las que el visitante priorizó en El Mapa.
+    // Sin datos de El Mapa (p. ej. al entrar directo con la tecla 2), se
+    // completa con el orden de siempre.
+    const puntajesMapa = this.motor.expedicion.puntajes.mapa;
+    this.estacionesJugadas = elegirEstaciones(puntajesMapa && puntajesMapa.elegidas);
+    this.guia.entrada = 'Tus equipos llegaron. Ahora hay que caminar los dos tramos a los que diste ' +
+      'más prioridad: ' + this.estacionesJugadas.map((e) => e.nombre).join(' y ') +
+      '. Ve con tus propios ojos qué pasa ahí.';
+    this.guia.reiniciar();
+
     // Pista quieta de fondo para las instrucciones: se genera una sola vez.
-    this._fondoGuia = new Carrera(generarCamino(this.semilla));
+    this._fondoGuia = new Carrera(generarCamino(this.semilla, this.estacionesJugadas), this.estacionesJugadas);
     this.recentrarPuntero();
     window.addEventListener('keydown', this._onTecla);
     window.addEventListener('mousemove', this._onMover);
@@ -119,7 +180,8 @@ export class EscenaCamino extends Escena {
     if (this.motor.gestor) this.motor.gestor.addEventListener('botonReserva', this._onBotonReserva);
     this.audio && this.audio.musica('exploracion');
 
-    this._lentos = 0;
+    this._fallos = 0;
+    this._sinContexto = 0;
     if (!this.vista3d) this.vista3d = await this._arrancar3D();
     if (this.vista3d) this.vista3d.mostrar(false);
   }
@@ -142,12 +204,22 @@ export class EscenaCamino extends Escena {
     }
   }
 
-  /** Vuelve al 2D sin cortar la partida. */
-  _apagar3D(motivo) {
-    if (!this.vista3d) return;
-    console.warn('Vista 3D apagada:', motivo);
+  /**
+   * El 3D falló de verdad: se tira y se crea otro, sin cortar la partida. Lo
+   * que tarde en cargar (un par de segundos) se ve la pista en 2D.
+   */
+  _rearmar3D(motivo) {
+    if (!this.vista3d || this._rearmando) return;
+    console.warn('Vista 3D reiniciada:', motivo);
     this.vista3d.destruir();
     this.vista3d = null;
+    this._fallos = 0;
+    this._sinContexto = 0;
+    this._rearmando = true;
+    this._arrancar3D().then((v) => {
+      this._rearmando = false;
+      if (v) this.vista3d = v;
+    });
   }
 
   salir() {
@@ -160,16 +232,31 @@ export class EscenaCamino extends Escena {
 
   /**
    * Alguien pulsó un botón en el mando de reserva: se une como jugador 2.
-   * Así nadie tiene que tocar el teclado ni el panel F9.
+   * Así nadie tiene que tocar el teclado ni el panel de mandos (tecla J).
    */
   async _unirse(entrada) {
-    const g = this.motor.gestor;
-    if (this.fase !== 'guia' || !g || g.ranuras[1]) return;
-    const ok = await g.activar(entrada.id, 1);
-    if (ok) {
-      this.aviso2 = { t: 2.5 };
-      this.audio && this.audio.sfx('elegir');
-    }
+    if (this.fase !== 'guia' || eleccion(this.motor) === 1) return;
+    const razon = await unirJugador2(this.motor, entrada);
+    if (razon === null) return;
+    if (razon) { this.avisoLado = { t: 4, texto: razon }; this.audio && this.audio.sfx('error'); return; }
+    this.teclado2.unido = false;         // el mando manda sobre el teclado
+    this.aviso2 = { t: 2.5 };
+    this.audio && this.audio.sfx('elegir');
+  }
+
+
+  /** ¿El Jugador 2 tiene un Joy-Con conectado? */
+  _j2PorMando() {
+    const j2 = this.motor.jugadores[1];
+    return !!(j2 && j2.estado.conectado);
+  }
+
+  /** El Jugador 2 se une con las flechas del teclado. */
+  _unirTeclado() {
+    this.teclado2.unido = true;
+    this.teclado2.carril = 1;
+    this.aviso2 = { t: 2.5 };
+    this.audio && this.audio.sfx('elegir');
   }
 
   // ----------------------------------------------------------- entrada
@@ -193,14 +280,19 @@ export class EscenaCamino extends Escena {
     this.tFase += dt;
     this._dt = dt;
 
-    // Vigilancia de rendimiento: si el 3D no rinde, se cambia a 2D solo.
-    if (this.vista3d && this.fase === 'carrera') {
-      this._lentos = this.motor.fps < FPS_MINIMO ? this._lentos + dt : 0;
-      if (this._lentos > SEGUNDOS_LENTOS) this._apagar3D('menos de ' + FPS_MINIMO + ' fps');
+    // Si la tarjeta gráfica perdió el contexto y no lo recupera sola, se
+    // vuelve a crear la vista.
+    if (this.vista3d) {
+      this._sinContexto = this.vista3d.perdido ? this._sinContexto + dt : 0;
+      if (this._sinContexto > SEGUNDOS_SIN_CONTEXTO) this._rearmar3D('contexto WebGL perdido');
     }
     if (this.aviso2) { this.aviso2.t -= dt; if (this.aviso2.t <= 0) this.aviso2 = null; }
+    if (this.avisoLado) { this.avisoLado.t -= dt; if (this.avisoLado.t <= 0) this.avisoLado = null; }
     for (const lista of this.avisos) for (const a of lista) a.vida -= dt;
     this.avisos = this.avisos.map((l) => l.filter((a) => a.vida > 0));
+    for (const lista of this.saltos) for (const a of lista) a.vida -= dt;
+    this.saltos = this.saltos.map((l) => l.filter((a) => a.vida > 0));
+    this.transiciones = this.transiciones.map((v) => Math.max(0, v - dt / DURACION_TRANSICION));
 
     // En las pantallas que se leen, las pulsaciones se consumen SIEMPRE, y solo
     // cuentan pasado el tiempo mínimo: una pulsación vieja nunca salta pantalla.
@@ -222,10 +314,11 @@ export class EscenaCamino extends Escena {
       for (const { i, k, rect } of this._reparto()) {
         const c = this.carreras[k];
         c.actualizar(dt, this._carrilDe(i, k, rect, c), this._analiza(i));
-        this._reaccionar(i, k, c.eventos);
+        this._reaccionar(i, k, c.eventos, this.estacionesJugadas);
       }
       // Lo pulsado durante la carrera no debe saltarse el tablero al llegar.
       this.teclado.analizar = false;
+      this.teclado2.analizar = false;
       this.teclado.confirmar = false;
       this.raton.clic = false;
       if (this.carreras.every((c) => c.terminada)) {
@@ -260,11 +353,14 @@ export class EscenaCamino extends Escena {
   }
 
   _empezarCuenta() {
-    const activos = this.motor.jugadoresActivos;
-    // Sin ningún mando se juega igual, con teclado o ratón, como jugador 1.
-    this.participantes = activos.length ? activos : [0];
-    const camino = generarCamino(this.semilla);   // el mismo para todos
-    this.carreras = this.participantes.map(() => new Carrera(camino));
+    this.participantes = participantesDe(this.motor, this.teclado2.unido, this.teclado.activo);
+    // Lo que se decida aquí vale también para El Regreso.
+    this.motor.expedicion.jugadores = this.participantes.length;
+    const camino = generarCamino(this.semilla, this.estacionesJugadas);   // el mismo para todos
+    this.carreras = this.participantes.map(() => new Carrera(camino, this.estacionesJugadas));
+    this.teclado.carril = 1;
+    this.teclado2.carril = 1;
+    this.teclado2.analizar = false;
     this.recentrarPuntero();
     // Lo pulsado para empezar no cuenta como "analizar" en la carrera.
     this.teclado.analizar = false;
@@ -285,6 +381,8 @@ export class EscenaCamino extends Escena {
   }
 
   _carrilDe(i, k, rect, c) {
+    if (i === 1 && this.teclado2.unido) return this.teclado2.carril;
+    if (this.teclado.activo && i === this.participantes[0]) return this.teclado.carril;
     if (this.motor.jugadores[i].estado.conectado) {
       return carrilDesdePuntero(this.punteros[i].x, rect.ancho, c.carril);
     }
@@ -297,20 +395,29 @@ export class EscenaCamino extends Escena {
 
   _analiza(i) {
     if (this.motor.jugadores[i].estado.conectado && this.acciones[i].confirmar()) return true;
+    if (i === 1 && this.teclado2.unido) return this.teclado2.analizar;
     return i === this.participantes[0] && (this.teclado.analizar || this.raton.clic);
   }
 
   /** Sonido, vibración y avisos en pantalla para lo que acaba de pasar. */
-  _reaccionar(i, k, eventos) {
+  _reaccionar(i, k, eventos, estaciones) {
     const jc = this.motor.jugadores[i];
     const au = this.audio;
     const aviso = (texto, color, vida = 1.4) => this.avisos[k].push({ texto, color, vida, max: vida });
+    // Lo recogido salta desde el explorador: se entiende al instante que lo atrapó.
+    const salto = (texto, color, tam = 1) => {
+      const l = this.saltos[k];
+      if (l.length > 5) l.shift();
+      l.push({ texto, color, tam, vida: 0.8, max: 0.8, dx: (Math.random() - 0.5) * 0.5 });
+    };
     for (const e of eventos) {
       switch (e.tipo) {
-        case 'dato': au && au.sfx('dato'); break;
+        case 'dato': au && au.sfx('dato'); salto('+1 ◆', AZUL_DATO); break;
         case 'control':
-          au && au.sfx('control');
-          aviso('✓ Según el manual, todo en orden', PALETA.oroClaro, 1.1);
+          au && au.sfx('lente');
+          jc.pulso(260, 0.5, 80);
+          aviso('Power BI cruzó los datos por ti', '#ffd24a', 1.4);
+          salto('+' + CAMINO.puntos.control + ' · Power BI', '#ffd24a', 1.15);
           break;
         case 'choque':
           au && au.sfx('choque');
@@ -329,10 +436,14 @@ export class EscenaCamino extends Escena {
           au && au.sfx('especial');
           jc.pulso(480, 0.85, 160);
           aviso('¡Encontraste algo escondido!', ROJO, 1.6);
+          salto('+' + CAMINO.puntos.hallazgo, ROJO, 1.5);
           break;
         case 'estacion':
           au && au.sfx('fase');
-          aviso(ESTACIONES[e.estacion].nombre + ' · ' + ESTACIONES[e.estacion].que, PALETA.tinta, 2.2);
+          // Cambio de tramo, a media carrera: el letrero grande «Entrando a…».
+          // Al arrancar (primer tramo) basta el aviso de siempre.
+          if (e.estacion > 0) { this.transiciones[k] = 1; jc.pulso(200, 0.4, 90); }
+          else aviso(estaciones[e.estacion].nombre + ' · ' + estaciones[e.estacion].que, PALETA.tinta, 2.2);
           break;
       }
     }
@@ -350,9 +461,13 @@ export class EscenaCamino extends Escena {
       c.clearRect(0, 0, W, H);
       try {
         this.vista3d.redimensionar(W, H);
-        this.vista3d.dibujar(this.carreras, this.participantes, this._dt);
+        this.vista3d.dibujar(this.carreras, this.participantes, this.motor.pausado ? 0 : this._dt);
+        this._fallos = 0;
       } catch (e) {
-        this._apagar3D(e && e.message);
+        // Un fotograma que falla no apaga nada: se avisa y se sigue. Solo si
+        // falla muchos seguidos se rearma la vista.
+        if (this._fallos === 0) console.warn('Fotograma 3D con error:', e);
+        if (++this._fallos >= FALLOS_SEGUIDOS) this._rearmar3D(e && e.message);
       }
     } else {
       c.fillStyle = PALETA.fondoHondo;
@@ -385,7 +500,8 @@ export class EscenaCamino extends Escena {
 
   _nombreBoton(i) {
     const jc = this.motor.jugadores[i];
-    return jc.estado.conectado ? this.acciones[i].nombreConfirmar : 'ENTER';
+    if (jc.estado.conectado) return this.acciones[i].nombreConfirmar;
+    return i === 1 && this.teclado2.unido ? '↑' : 'ENTER';
   }
 
   _dibujarFondoGuia(c, W, H) {
@@ -398,32 +514,7 @@ export class EscenaCamino extends Escena {
 
   /** Estado de los jugadores bajo las instrucciones: quién está listo. */
   _dibujarUnion(c, W, H) {
-    const g = this.motor.gestor;
-    const j2 = this.motor.jugadores[1];
-    const texto = j2 && j2.estado.conectado
-      ? 'Jugador 2 listo · ' + (j2.esIzquierdo ? 'Joy-Con L' : 'Joy-Con R')
-      : (g && g.relevo
-        ? '¿Juegan dos? Que el Jugador 2 pulse cualquier botón del otro Joy-Con'
-        : 'Juega uno. Para jugar dos, enciende el otro Joy-Con');
-    const listo = j2 && j2.estado.conectado;
-    c.font = '15px ' + FUENTE.interfaz;
-    const w = c.measureText(texto).width + 40;
-    const x = (W - w) / 2, y = H - 64;
-    c.fillStyle = listo ? 'rgba(90,169,230,0.16)' : 'rgba(255,255,255,0.05)';
-    rectRedondeado(c, x, y, w, 38, 19);
-    c.fill();
-    c.strokeStyle = listo ? AZUL_DATO : 'rgba(255,255,255,0.12)';
-    c.lineWidth = 1;
-    c.stroke();
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillStyle = listo ? AZUL_DATO : PALETA.tintaTenue;
-    c.fillText(texto, W / 2, y + 19);
-    if (this.aviso2) {
-      c.font = 'bold 22px ' + FUENTE.interfaz;
-      c.fillStyle = AZUL_DATO;
-      c.fillText('¡El Jugador 2 se unió!', W / 2, y - 30);
-    }
+    dibujarUnion(c, W, H, this.motor, this.teclado2.unido, this.aviso2, this.avisoLado);
   }
 
   // ---------------------------------------------------------- la pista
@@ -432,7 +523,8 @@ export class EscenaCamino extends Escena {
   /** Proyección en perspectiva: distancia por delante -> altura y escala. */
   _proy(dz, r) {
     const C = 7;
-    const esc = C / (C + Math.max(-1.6, dz));
+    // Lo que ya pasó (dz negativo) sigue bajando hasta salir por abajo.
+    const esc = C / (C + Math.max(-5.5, dz));
     const hz = r.alto * 0.3, base = r.alto * 0.84;
     return { y: hz + (base - hz) * esc, esc, hw: r.ancho * 0.4 * esc };
   }
@@ -512,7 +604,7 @@ export class EscenaCamino extends Escena {
     }
 
     // objetos, de lejos a cerca
-    for (const { o, dz } of car.visibles()) this._dibujarObjeto(c, o, dz, r, u, lente);
+    for (const { o, dz } of car.visibles()) this._dibujarObjeto(c, o, dz, r, u, lente, car.estaciones);
 
     if (soloFondo) return;
 
@@ -539,7 +631,7 @@ export class EscenaCamino extends Escena {
     this._dibujarHud(c, r, i, k, car, u, col);
   }
 
-  _dibujarObjeto(c, o, dz, r, u, lente) {
+  _dibujarObjeto(c, o, dz, r, u, lente, estaciones) {
     const p = this._proy(dz, r);
     const x = this._xCarril(o.carril, p, r);
     const t = p.esc * u;
@@ -555,21 +647,24 @@ export class EscenaCamino extends Escena {
         break;
       }
       case 'control': {
-        const w = 56 * t, h = 34 * t;
-        c.fillStyle = 'rgba(217,164,65,0.9)';
-        c.fillRect(x - 2 * t, p.y - h - 30 * t, 4 * t, 30 * t);
-        rectRedondeado(c, x - w / 2, p.y - h - 30 * t - h, w, h, 5 * t);
+        // el tablero de Power BI: pantalla con barras amarillas sobre una base
+        const w = 60 * t, h = 40 * t, y0 = p.y - 20 * t - h;
+        c.fillStyle = '#6b5a45';
+        rectRedondeado(c, x - w / 2, y0, w, h, 4 * t);
         c.fill();
-        if (t > 0.35) {
-          c.fillStyle = PALETA.fondoHondo;
-          c.textAlign = 'center';
-          c.textBaseline = 'middle';
-          c.font = 'bold ' + Math.round(22 * t) + 'px ' + FUENTE.interfaz;
-          c.fillText('✓', x, p.y - h / 2 - 30 * t - h);
+        c.fillStyle = '#1a1712';
+        c.fillRect(x - w / 2 + 4 * t, y0 + 4 * t, w - 8 * t, h - 8 * t);
+        c.fillStyle = '#f6c343';
+        for (let b = 0; b < 4; b++) {
+          const hb = (h - 14 * t) * [0.4, 0.7, 0.55, 0.9][b];
+          c.fillRect(x - w / 2 + 9 * t + b * 11 * t, y0 + h - 6 * t - hb, 7 * t, hb);
         }
+        c.fillStyle = '#8a7658';
+        c.fillRect(x - w / 2 - 6 * t, p.y - 20 * t, w + 12 * t, 8 * t);
         break;
       }
       case 'muro': {
+        if (o.derribado) break;          // se lo llevó por delante: ya no está de pie
         const w = (2 / 3) * p.hw * 0.92, h = 70 * t;
         c.fillStyle = '#3a1d1f';
         rectRedondeado(c, x - w / 2, p.y - h, w, h, 4 * t);
@@ -618,7 +713,7 @@ export class EscenaCamino extends Escena {
         break;
       }
       case 'estacion': {
-        const est = ESTACIONES[o.estacion];
+        const est = estaciones[o.estacion];
         const w = p.hw * 2.1, h = 150 * t;
         c.strokeStyle = 'rgba(217,164,65,0.7)';
         c.lineWidth = Math.max(1.5, 6 * t);
@@ -660,105 +755,215 @@ export class EscenaCamino extends Escena {
     c.fillRect(0, H * 0.86, W, H * 0.14);
   }
 
+  /**
+   * Los marcadores de la carrera, con el estilo de los menús: cajas de roca
+   * con doble borde y letra grande, para leerse de reojo sin dejar de correr.
+   * Todo escala con el tamaño de la mitad de pantalla del jugador.
+   */
   _dibujarHud(c, r, i, k, car, u, col) {
     const W = r.ancho, H = r.alto;
+    const s = limitar(Math.min(W / 800, H / 820), 0.75, 1.3);
+    const m = Math.round(16 * s);                       // margen
+    c.save();
 
-    // cabecera: jugador y descubrimientos
+    // --- arriba a la izquierda: jugador y puntos
+    const wJ = Math.round(210 * s), hJ = Math.round(76 * s);
+    cajaMenu(c, m, m, wJ, hJ, { relleno: 'rgba(8,5,3,0.78)' });
     c.textAlign = 'left';
     c.textBaseline = 'top';
-    c.font = 'bold 20px ' + FUENTE.interfaz;
+    const nombre = nombreDe(this.motor, i);
+    let tamN = Math.round(24 * s);
+    c.font = 'bold ' + tamN + 'px ' + MENU.letra;
+    const cabe = wJ - 32 * s;
+    const wN = c.measureText(nombre).width;
+    if (wN > cabe) { tamN = Math.floor(tamN * cabe / wN); c.font = 'bold ' + tamN + 'px ' + MENU.letra; }
+    c.fillStyle = 'rgba(0,0,0,0.85)';
+    c.fillText(nombre, m + 16 * s + 2, m + 12 * s + 2);
     c.fillStyle = col;
-    c.fillText('JUGADOR ' + (i + 1), 22, 18);
-    c.font = '12px ' + FUENTE.interfaz;
-    c.fillStyle = PALETA.tintaDebil;
-    c.fillText(car.puntos + ' puntos', 22, 44);
+    c.fillText(nombre, m + 16 * s, m + 12 * s);
+    textoMenu(c, car.puntos + ' puntos', m + 16 * s, m + 44 * s, Math.round(18 * s), MENU.beige);
 
-    c.textAlign = 'right';
-    c.font = 'bold 44px ' + FUENTE.interfaz;
-    c.fillStyle = car.hallazgos.length ? ROJO : PALETA.tintaDebil;
-    c.fillText(String(car.hallazgos.length), W - 22, 10);
-    c.font = '11px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.tintaDebil;
-    c.fillText('DESCUBRIMIENTOS', W - 22, 58);
+    // --- arriba a la derecha: lo encontrado, lo que más importa
+    const wD = Math.round(190 * s);
+    cajaMenu(c, W - m - wD, m, wD, hJ + 10 * s, { relleno: 'rgba(8,5,3,0.78)' });
+    c.textAlign = 'center';
+    const cxD = W - m - wD / 2;
+    c.font = 'bold ' + Math.round(50 * s) + 'px ' + MENU.letra;
+    c.textBaseline = 'top';
+    c.fillStyle = 'rgba(0,0,0,0.85)';
+    c.fillText(String(car.hallazgos.length), cxD + 2, m + 6 * s + 2);
+    c.fillStyle = car.hallazgos.length ? ROJO : 'rgba(205,187,138,0.55)';
+    c.fillText(String(car.hallazgos.length), cxD, m + 6 * s);
+    c.font = Math.round(13 * s) + 'px ' + FUENTE.instrumento;
+    c.fillStyle = MENU.beigeBorde;
+    c.fillText('DESCUBRIMIENTOS', cxD, m + 62 * s);
 
-    // recorrido por estaciones
-    const x0 = 22, x1 = W - 22, yb = 84;
-    const tramo = (x1 - x0) / ESTACIONES.length;
-    ESTACIONES.forEach((e, n) => {
-      const xa = x0 + n * tramo;
-      const lleno = limitar(car.progreso * ESTACIONES.length - n, 0, 1);
-      c.fillStyle = 'rgba(255,255,255,0.08)';
-      c.fillRect(xa + 2, yb, tramo - 4, 6);
-      c.fillStyle = n === car.estacion ? PALETA.oro : 'rgba(217,164,65,0.55)';
-      c.fillRect(xa + 2, yb, (tramo - 4) * lleno, 6);
-      c.textAlign = 'center';
-      c.font = (n === car.estacion ? 'bold ' : '') + '11px ' + FUENTE.interfaz;
-      c.fillStyle = n === car.estacion ? PALETA.tinta : PALETA.tintaDebil;
-      const nombre = partirLineas(c, e.nombre, tramo - 6)[0];
-      c.fillText(nombre, xa + tramo / 2, yb + 12);
-    });
+    // --- recorrido por tramos, entre las dos cajas
+    const x0 = m * 2 + wJ, x1 = W - m * 2 - wD, yb = m + 20 * s;
+    if (x1 - x0 > 80) {
+      const tramo = (x1 - x0) / car.estaciones.length;
+      car.estaciones.forEach((e, n) => {
+        const xa = x0 + n * tramo;
+        const lleno = limitar(car.progreso * car.estaciones.length - n, 0, 1);
+        c.fillStyle = 'rgba(8,5,3,0.7)';
+        c.fillRect(xa + 3, yb, tramo - 6, 10 * s);
+        c.fillStyle = n === car.estacion ? '#f6a92c' : 'rgba(240,201,119,0.6)';
+        c.fillRect(xa + 3, yb, (tramo - 6) * lleno, 10 * s);
+        c.strokeStyle = MENU.beigeBorde;
+        c.lineWidth = 1;
+        c.strokeRect(xa + 3.5, yb + 0.5, tramo - 7, 10 * s - 1);
+        c.textAlign = 'center';
+        c.textBaseline = 'top';
+        c.font = (n === car.estacion ? 'bold ' : '') + Math.round(16 * s) + 'px ' + MENU.letra;
+        const nombre = partirLineas(c, e.nombre, tramo - 8)[0];
+        textoMenu(c, nombre, xa + tramo / 2, yb + 16 * s, Math.round(16 * s),
+          n === car.estacion ? '#fff3cf' : 'rgba(233,220,180,0.7)');
+      });
+    }
 
-    // datos y análisis, abajo
-    const yd = H - 58;
-    const anchoBarra = Math.min(260, W * 0.35);
+    // --- abajo: datos y análisis, en su caja
+    const anchoBarra = Math.min(300 * s, W * 0.42);
+    const hC = Math.round(64 * s), yC = H - m - hC;
+    cajaMenu(c, m, yC, anchoBarra + 32 * s, hC, { relleno: 'rgba(8,5,3,0.78)' });
     c.textAlign = 'left';
-    c.textBaseline = 'bottom';
-    c.font = '11px ' + FUENTE.instrumento;
+    c.textBaseline = 'top';
+    c.font = 'bold ' + Math.round(16 * s) + 'px ' + FUENTE.interfaz;
     c.fillStyle = AZUL_DATO;
-    c.fillText('◆ DATOS  ' + car.datos, 22, yd - 4);
-    c.fillStyle = 'rgba(255,255,255,0.08)';
-    c.fillRect(22, yd, anchoBarra, 10);
+    c.fillText('◆ DATOS  ' + car.datos, m + 16 * s, yC + 10 * s);
+    const yBarra = yC + 36 * s, hBarra = 14 * s;
+    c.fillStyle = 'rgba(255,255,255,0.1)';
+    c.fillRect(m + 16 * s, yBarra, anchoBarra, hBarra);
     c.fillStyle = AZUL_DATO;
-    c.fillRect(22, yd, anchoBarra * (car.datos / CAMINO.maxDatos), 10);
-    const xm = 22 + anchoBarra * (CAMINO.costoLente / CAMINO.maxDatos);
-    c.fillStyle = PALETA.tinta;
-    c.fillRect(xm - 1, yd - 3, 2, 16);
+    c.fillRect(m + 16 * s, yBarra, anchoBarra * (car.datos / CAMINO.maxDatos), hBarra);
+    const xm = m + 16 * s + anchoBarra * (CAMINO.costoLente / CAMINO.maxDatos);
+    c.fillStyle = MENU.beige;
+    c.fillRect(xm - 1.5, yBarra - 4, 3, hBarra + 8);
 
     const listo = car.datos >= CAMINO.costoLente || car.lente > 0;
-    c.textAlign = 'right';
-    c.font = 'bold 15px ' + FUENTE.interfaz;
-    c.fillStyle = car.lente > 0 ? AZUL_DATO : listo ? PALETA.oroClaro : PALETA.tintaDebil;
-    const boton = this.motor.jugadores[i].estado.conectado ? this.acciones[i].nombreConfirmar : 'ESPACIO';
-    c.fillText(car.lente > 0 ? 'ANALIZANDO…' : listo ? boton + ' · ANALIZAR' : 'Faltan datos para analizar', W - 22, yd + 10);
+    const conTeclado = this.teclado.activo && i === this.participantes[0];
+    const boton = i === 1 && this.teclado2.unido ? '↑'
+      : this.motor.jugadores[i].estado.conectado && !conTeclado ? this.acciones[i].nombreConfirmar : 'W';
+    const texto = car.lente > 0 ? 'ANALIZANDO…' : listo ? boton + ' · ANALIZAR' : 'Faltan datos para analizar';
+    c.font = 'bold ' + Math.round(20 * s) + 'px ' + MENU.letra;
+    const wA = c.measureText(texto).width + 36 * s;
+    cajaMenu(c, W - m - wA, yC, wA, hC, {
+      relleno: car.lente > 0 ? 'rgba(20,50,80,0.85)' : listo ? 'rgba(90,30,10,0.8)' : 'rgba(8,5,3,0.78)',
+      brillo: listo ? 1 : 0.5,
+    });
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    textoMenu(c, texto, W - m - wA / 2, yC + hC / 2, Math.round(20 * s),
+      car.lente > 0 ? '#9fd0ff' : listo ? '#fff3cf' : 'rgba(205,187,138,0.6)');
+    c.restore();
 
-    // avisos flotantes
-    let ya = H * 0.2;
+    // avisos flotantes, grandes y con contorno: se leen sobre el cielo claro
+    const tamAviso = Math.round(26 * s);
+    let ya = H * 0.24;
     for (const a of this.avisos[k] || []) {
-      const alfa = Math.min(1, a.vida / 0.4);
-      c.globalAlpha = alfa;
+      c.globalAlpha = Math.min(1, a.vida / 0.4);
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.font = 'bold 20px ' + FUENTE.interfaz;
-      c.lineWidth = 4;
-      c.strokeStyle = 'rgba(5,7,12,0.9)';
+      c.font = 'bold ' + tamAviso + 'px ' + MENU.letra;
+      c.lineJoin = 'round';
+      c.lineWidth = 6;
+      c.strokeStyle = 'rgba(12,4,2,0.92)';
       c.strokeText(a.texto, W / 2, ya);
       c.fillStyle = a.color;
       c.fillText(a.texto, W / 2, ya);
       c.globalAlpha = 1;
-      ya += 30;
+      ya += tamAviso * 1.4;
     }
 
+    this._dibujarSaltos(c, W, H, k, s);
+    this._dibujarTransicion(c, W, H, this.transiciones[k] || 0, car);
+
     if (car.terminada && this.carreras.some((x) => !x.terminada)) {
-      c.fillStyle = 'rgba(5,7,12,0.75)';
-      c.fillRect(0, 0, W, H);
+      c.save();
+      c.globalAlpha = 0.85;
+      fondoMenu(c, W, H);
+      c.restore();
       c.textAlign = 'center';
+      tituloMenu(c, 'Llegaste', W / 2, H / 2 - 30 * s, Math.round(56 * s));
       c.textBaseline = 'middle';
-      c.font = '22px ' + FUENTE.narrativa;
-      c.fillStyle = PALETA.tinta;
-      c.fillText('Llegaste. Esperando al otro jugador…', W / 2, H / 2);
+      textoMenu(c, 'Esperando al otro jugador…', W / 2, H / 2 + 30 * s, Math.round(22 * s), MENU.beige);
     }
   }
 
-  _dibujarCuenta(c, W, H) {
-    const n = Math.ceil(3 - this.tFase);
-    const f = (3 - this.tFase) % 1;
+  /** Los «+1 ◆» que suben desde el explorador, crecen un poco y se apagan. */
+  _dibujarSaltos(c, W, H, k, s) {
+    const lista = this.saltos[k];
+    if (!lista || !lista.length) return;
+    c.save();
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.globalAlpha = 0.4 + f * 0.6;
-    c.font = 'bold ' + Math.round(120 + (1 - f) * 40) + 'px ' + FUENTE.interfaz;
-    c.fillStyle = PALETA.tinta;
-    c.fillText(String(n), W / 2, H / 2);
-    c.globalAlpha = 1;
+    c.lineJoin = 'round';
+    for (const a of lista) {
+      const p = 1 - a.vida / a.max;                         // 0 → 1
+      const tam = Math.round(30 * s * a.tam * (0.8 + 0.35 * Math.min(1, p * 4)));
+      c.globalAlpha = Math.min(1, (a.vida / a.max) * 2.2);
+      c.font = 'bold ' + tam + 'px ' + MENU.letra;
+      const x = W * (0.5 + a.dx * 0.25), y = H * (0.62 - p * 0.2);
+      c.lineWidth = 6;
+      c.strokeStyle = 'rgba(12,4,2,0.9)';
+      c.strokeText(a.texto, x, y);
+      c.fillStyle = a.color;
+      c.fillText(a.texto, x, y);
+    }
+    c.restore();
+  }
+
+  /**
+   * El paso de un tramo al otro: un barrido de luz cruza la pantalla y el
+   * nombre del tramo nuevo entra creciendo y se queda lo justo para leerlo
+   * (DURACION_TRANSICION). Mientras tanto el camino no trae muros.
+   * @param {number} v 1 al cruzar, decae a 0.
+   */
+  _dibujarTransicion(c, W, H, v, car) {
+    if (v <= 0) return;
+    const k = 1 - v;                         // 0 → 1 a lo largo de la animación
+    // Entra rápido, se sostiene y se va en el último cuarto.
+    const presencia = Math.min(1, k * 6, v * 4);
+    c.save();
+
+    // Velo suave, que deja ver el camino.
+    c.globalAlpha = presencia * 0.22;
+    c.fillStyle = PALETA.oro;
+    c.fillRect(0, 0, W, H);
+
+    // Barrido: una franja de luz que cruza de izquierda a derecha, al principio.
+    const kb = Math.min(1, k / 0.35);
+    if (kb < 1) {
+      const xb = -W * 0.3 + kb * W * 1.6;
+      const g = c.createLinearGradient(xb - W * 0.25, 0, xb + W * 0.25, 0);
+      g.addColorStop(0, 'rgba(240,201,119,0)');
+      g.addColorStop(0.5, 'rgba(255,240,200,0.55)');
+      g.addColorStop(1, 'rgba(240,201,119,0)');
+      c.globalAlpha = 1;
+      c.fillStyle = g;
+      c.fillRect(0, 0, W, H);
+    }
+
+    // El nombre del tramo nuevo, y qué es.
+    const e = car.estaciones[car.estacion];
+    const escala = 0.7 + suave(Math.min(1, k * 5)) * 0.3;
+    c.globalAlpha = presencia;
+    const anchoCaja = Math.min(W * 0.9, 660);
+    c.translate(W / 2, H * 0.42);
+    c.scale(escala, escala);
+    cajaMenu(c, -anchoCaja / 2, -66, anchoCaja, 128, { relleno: 'rgba(8,5,3,0.78)' });
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = '14px ' + FUENTE.instrumento;
+    c.fillStyle = MENU.beigeBorde;
+    c.fillText('E N T R A N D O   A', 0, -40);
+    tituloMenu(c, e.nombre, 0, 2, 48);
+    c.textBaseline = 'middle';
+    textoMenu(c, e.que, 0, 40, 19, MENU.beige);
+    c.restore();
+  }
+
+  _dibujarCuenta(c, W, H) {
+    cuentaMenu(c, W, H, this.tFase);
   }
 
   // ------------------------------------------------------------ tablero
@@ -770,150 +975,111 @@ export class EscenaCamino extends Escena {
     const R = this.resultados[k];
     const W = r.ancho, H = r.alto;
     const col = COLOR_J[i % 2];
-    c.fillStyle = PALETA.fondo;
-    c.fillRect(0, 0, W, H);
+    fondoMenu(c, W, H);
 
-    const ancho = Math.min(560, W - 60);
-    const x0 = (W - ancho) / 2;
     const lineas = [
       '◆ ' + R.datos + ' datos recogidos · analizaste ' + R.usosLente + (R.usosLente === 1 ? ' vez' : ' veces'),
-      '✓ ' + R.controles + ' carteles «todo en orden»: ninguno escondía nada',
+      R.controles
+        ? 'Tomaste ' + R.controles + (R.controles === 1 ? ' tablero' : ' tableros') + ' de Power BI: analizaron el camino por ti'
+        : 'No tomaste ningún tablero de Power BI',
       R.choques ? 'Chocaste ' + R.choques + (R.choques === 1 ? ' vez' : ' veces') + ' con una excusa' : 'No chocaste con ninguna excusa',
       (R.noVistos + R.vistosNoAlcanzados) + ' cosas escondidas pasaron a tu lado sin que las atraparas',
     ];
     if (R.carrilComodo) lineas.push('Pasaste el ' + Math.round(R.carriles[1] * 100) + ' % del camino por el carril del centro');
 
-    const alto = 28 + 34 + 70 + 30 + ESTACIONES.length * 40 + 24 + lineas.length * 26 + 30;
-    let y = Math.max(96, (H - alto) / 2 + 20);
+    // Letra grande; si no cabe (pantalla partida, pantallas bajas), se achica.
+    let s = limitar(Math.min(W / 620, H / 700), 0.7, 1.6);
+    let ancho, textos, alto, pad;
+    for (let intento = 0; intento < 8; intento++) {
+      ancho = Math.min(640 * s, W - 40);
+      pad = 26 * s;
+      c.font = Math.round(18 * s) + 'px ' + FUENTE.interfaz;
+      textos = lineas.map((l) => partirLineas(c, l, ancho - pad * 2));
+      const altoTextos = textos.reduce((a, t) => a + t.length * 24 * s + 6 * s, 0);
+      alto = pad * 2 + 22 * s + 78 * s + 34 * s + R.porEstacion.length * 50 * s + 14 * s + altoTextos + 40 * s;
+      if (alto <= H - 110) break;
+      s *= 0.92;
+    }
+    const x = (W - ancho) / 2;
+    let y = Math.max(76, (H - alto) / 2 + 20);
+    cajaMenu(c, x, y, ancho, alto, { relleno: 'rgba(8,5,3,0.84)' });
+    const x0 = x + pad, x1 = x + ancho - pad;
+    y += pad;
 
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    c.font = '11px ' + FUENTE.instrumento;
+    c.font = Math.round(14 * s) + 'px ' + FUENTE.instrumento;
     c.fillStyle = col;
-    c.fillText('TABLERO · JUGADOR ' + (i + 1), W / 2, y);
-    y += 28;
-    c.font = 'bold 56px ' + FUENTE.interfaz;
-    c.fillStyle = R.hallazgos ? ROJO : PALETA.tintaTenue;
-    c.fillText(R.hallazgos + ' de ' + R.existentes, W / 2, y);
-    y += 66;
-    c.font = '15px ' + FUENTE.interfaz;
-    c.fillStyle = PALETA.tintaTenue;
-    c.fillText('cosas escondidas encontradas', W / 2, y);
-    y += 38;
+    c.fillText(('TABLERO · ' + nombreDe(this.motor, i)).split('').join(' '), W / 2, y);
+    y += 22 * s;
+    tituloMenu(c, R.hallazgos + ' de ' + R.existentes, W / 2, y + 36 * s, Math.round(68 * s));
+    y += 78 * s;
+    c.textBaseline = 'top';
+    textoMenu(c, 'cosas escondidas encontradas', W / 2, y, Math.round(20 * s), MENU.beige);
+    y += 34 * s;
 
-    // una fila por estación: lo que había frente a lo encontrado
+    // una fila por tramo: lo que había frente a lo encontrado
     for (const e of R.porEstacion) {
       c.textAlign = 'left';
-      c.font = '13px ' + FUENTE.interfaz;
-      c.fillStyle = PALETA.tinta;
-      c.fillText(e.nombre, x0, y);
+      textoMenu(c, e.nombre, x0, y, Math.round(19 * s), MENU.beige);
       c.textAlign = 'right';
-      c.fillStyle = e.encontrados ? ROJO : PALETA.tintaDebil;
-      c.fillText(e.encontrados + ' / ' + e.existentes, x0 + ancho, y);
-      const yb = y + 19;
-      const paso = ancho / Math.max(1, e.existentes);
+      textoMenu(c, e.encontrados + ' / ' + e.existentes, x1, y, Math.round(19 * s), e.encontrados ? ROJO : 'rgba(205,187,138,0.6)');
+      const yb = y + 26 * s;
+      const paso = (x1 - x0) / Math.max(1, e.existentes);
       for (let n = 0; n < e.existentes; n++) {
-        c.fillStyle = n < e.encontrados ? ROJO : 'rgba(255,255,255,0.10)';
-        c.fillRect(x0 + n * paso + 1, yb, paso - 3, 10);
+        c.fillStyle = n < e.encontrados ? ROJO : 'rgba(255,255,255,0.12)';
+        c.fillRect(x0 + n * paso + 1, yb, paso - 4, 13 * s);
       }
-      y += 40;
+      y += 50 * s;
     }
-    y += 12;
+    y += 14 * s;
 
     c.textAlign = 'left';
-    c.font = '14px ' + FUENTE.interfaz;
-    for (const l of lineas) {
-      c.fillStyle = PALETA.tintaTenue;
-      partirLineas(c, l, ancho).forEach((t) => { c.fillText(t, x0, y); y += 20; });
-      y += 6;
+    c.textBaseline = 'top';
+    c.font = Math.round(18 * s) + 'px ' + FUENTE.interfaz;
+    c.fillStyle = '#d6c8a2';
+    for (const t of textos) {
+      t.forEach((l) => { c.fillText(l, x0, y); y += 24 * s; });
+      y += 6 * s;
     }
-    y += 8;
     c.textAlign = 'center';
-    c.font = 'bold 16px ' + FUENTE.interfaz;
-    c.fillStyle = PALETA.oroClaro;
-    c.fillText(R.puntos + ' puntos', W / 2, y);
+    c.font = 'bold ' + Math.round(22 * s) + 'px ' + MENU.letra;
+    c.fillStyle = '#f0c977';
+    c.fillText(R.puntos + ' puntos', W / 2, y + 8 * s);
   }
 
   _dibujarGanador(c, W, H) {
     const n = this.participantes.length;
     let texto;
     if (n < 2) texto = null;
-    else if (this.ganador < 0) texto = 'EMPATE';
-    else texto = 'GANA EL JUGADOR ' + (this.participantes[this.ganador] + 1);
+    else if (this.ganador < 0) texto = 'Empate';
+    else texto = textoGana(this.motor, this.participantes[this.ganador]);
     if (texto) {
-      c.font = 'bold 26px ' + FUENTE.interfaz;
-      const w = c.measureText(texto).width + 60;
-      c.fillStyle = 'rgba(5,7,12,0.92)';
-      rectRedondeado(c, (W - w) / 2, 22, w, 50, 25);
-      c.fill();
-      c.strokeStyle = PALETA.oro;
-      c.lineWidth = 2;
-      c.stroke();
+      c.font = 'bold 40px ' + MENU.letra;
+      const w = c.measureText(texto).width + 70;
+      cajaMenu(c, (W - w) / 2, 10, w, 60, { relleno: 'rgba(8,5,3,0.92)' });
       c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillStyle = PALETA.oroClaro;
-      c.fillText(texto, W / 2, 47);
+      tituloMenu(c, texto, W / 2, 41, 40);
     }
     if (this.tFase > BLOQUEO_TABLERO) {
       c.textAlign = 'center';
       c.textBaseline = 'bottom';
-      c.font = '15px ' + FUENTE.interfaz;
-      c.fillStyle = Math.sin(this.t * 4) > -0.45 ? PALETA.oro : PALETA.tintaDebil;
-      c.fillText('Pulsa ' + this._nombreBoton(this.participantes[0]) + ' para ver qué acabas de hacer', W / 2, H - 20);
+      textoMenu(c, 'Pulsa ' + this._nombreBoton(this.participantes[0]) + ' para ver qué acabas de hacer',
+        W / 2, H - 20, 20, Math.sin(this.t * 4) > -0.45 ? '#f0c977' : 'rgba(205,187,138,0.5)');
     }
   }
 
   // --------------------------------------------------------- revelación
   _dibujarRevelacion(c, W, H) {
-    const cx = W / 2;
-    const ancho = Math.min(980, W - 80);
-    const colQue = Math.min(250, ancho * 0.3);
-
-    c.font = '15px ' + FUENTE.interfaz;
-    const filas = ASI_TRABAJAMOS.map((f) => partirLineas(c, f.es, ancho - colQue - 30));
-    const altoFilas = filas.reduce((s, l) => s + Math.max(1, l.length) * 21 + 18, 0);
-    const alto = 30 + 50 + altoFilas + 70;
-    let y = Math.max(30, (H - alto) / 2);
-
-    c.textAlign = 'center';
-    c.textBaseline = 'top';
-    c.font = '11px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.oro;
-    c.fillText('LO QUE ACABAS DE HACER, EN LA VIDA REAL', cx, y);
-    y += 30;
-    c.font = '34px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tinta;
-    c.fillText('Así trabajamos', cx, y);
-    y += 60;
-
-    const x0 = cx - ancho / 2;
-    ASI_TRABAJAMOS.forEach((f, n) => {
-      const a = suave(Math.min(1, (this.tFase - n * 0.25) / 0.6));
-      c.globalAlpha = a;
-      c.textAlign = 'left';
-      c.font = 'bold 16px ' + FUENTE.interfaz;
-      c.fillStyle = f.que.includes('rojo') ? ROJO : f.que.includes('◆') ? AZUL_DATO : PALETA.oroClaro;
-      c.fillText(f.que, x0, y);
-      c.font = '15px ' + FUENTE.interfaz;
-      c.fillStyle = PALETA.tinta;
-      filas[n].forEach((l, m) => c.fillText(l, x0 + colQue + 30, y + m * 21));
-      y += Math.max(1, filas[n].length) * 21 + 18;
-      c.globalAlpha = 1;
+    dibujarRevelacion(c, W, H, {
+      titulo: 'Así trabajamos',
+      filas: ASI_TRABAJAMOS.map((f) => ({
+        ...f, color: f.que.includes('rojo') ? ROJO : f.que.includes('◆') ? AZUL_DATO : '#f0c977',
+      })),
+      cierre: 'No nos quedamos con lo que el proceso dice de sí mismo. Vamos a ver.',
+      pie: this.tFase > 2 ? 'Pulsa ' + this._nombreBoton(this.participantes[0] || 0) + ' para continuar' : null,
+      t: this.tFase,
+      reloj: this.t,
     });
-
-    if (this.tFase > 1.6) {
-      c.globalAlpha = suave(Math.min(1, (this.tFase - 1.6) / 0.8));
-      c.textAlign = 'center';
-      c.font = 'italic 20px ' + FUENTE.narrativa;
-      c.fillStyle = PALETA.oro;
-      c.fillText('No nos quedamos con lo que el proceso dice de sí mismo. Vamos a ver.', cx, y + 10);
-      c.globalAlpha = 1;
-    }
-    if (this.tFase > 2) {
-      c.textBaseline = 'bottom';
-      c.font = '15px ' + FUENTE.interfaz;
-      c.fillStyle = Math.sin(this.t * 4) > -0.45 ? PALETA.oro : PALETA.tintaDebil;
-      c.fillText('Pulsa ' + this._nombreBoton(this.participantes[0] || 0) + ' para continuar', cx, H - 24);
-    }
   }
 }

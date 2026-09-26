@@ -1,0 +1,22 @@
+CINEMÁTICAS — videos cortos que cuentan la historia de la exploradora.
+
+Pon aquí los videos con estos nombres exactos:
+
+  inicio.mp4    al empezar la expedición (después de poner los nombres)
+  mapa.mp4      antes de la Etapa 1, El Mapa
+  camino.mp4    antes de la Etapa 2, El Camino
+  regreso.mp4   antes de la Etapa 3, El camino despejado
+  final.mp4     al terminar la Etapa 3, antes del recuento de puntos
+
+Formato: MP4 (H.264), 1920x1080 (16:9), máximo 15 segundos cada uno.
+Chrome los reproduce sin instalar nada. Mientras suena un video, la música
+del juego se baja sola y vuelve al terminar.
+
+Si falta un video, el juego no se rompe: sigue directo.
+El visitante puede saltar el video con el gatillo, Espacio, Enter o un clic.
+
+Los videos no llevan texto ni diálogo: el mensaje va en la imagen. En los de
+las etapas, indirecto (regla de oro, docs/NARRATIVA.md: mientras se juega no
+se nombra el oficio); en el final ya puede ser directo.
+
+Prompts de imagen (ChatGPT) y de animación (Gemini): docs/CINEMATICAS.md.

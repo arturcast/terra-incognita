@@ -86,14 +86,15 @@ test('quien no pulsa nunca se cae, y no entrega nada', () => {
   assert.ok(r.choques > 0, 'sin aletear hay que caer');
 });
 
-test('chocar cuesta un sobre y tiempo, pero no saca del juego', () => {
+test('chocar cuesta tiempo, pero no saca del juego ni quita puntos', () => {
   assert.equal(FIN_AL_CHOCAR, false);
   const v = new Vuelo(generarCielo(5), 4);
-  const antes = v.sobres;
+  v.entregas = 3;
+  const antes = v.puntos;
   v.y = VUELO.alto - VUELO.suelo;          // pegado al suelo
   v.actualizar(DT, false);
   assert.equal(v.choques, 1);
-  assert.equal(v.sobres, antes - 1);
+  assert.equal(v.puntos, antes, 'chocar no quita lo ya entregado');
   assert.ok(v.caido > 0 && !v.volando);
   // y vuelve solo
   for (let t = 0; t < VUELO.reaparicion + 0.1; t += DT) v.actualizar(DT, false);
@@ -102,33 +103,62 @@ test('chocar cuesta un sobre y tiempo, pero no saca del juego', () => {
   assert.ok(!v.terminado, 'la partida sigue');
 });
 
-test('quien vuela al centro del paso entrega casi todo lo que trae', () => {
-  let entregadas = 0, traidas = 0, choques = 0;
+test('quien vuela al centro del paso atraviesa casi todos los aros', () => {
+  let entregas = 0, aros = 0, choques = 0;
   for (let semilla = 1; semilla <= 12; semilla++) {
-    const { r } = volar(piloto, { semilla, hallazgos: 6 });
-    entregadas += r.entregas;
-    traidas += r.sobresIniciales;
+    const { r } = volar(piloto, { semilla, hallazgos: 0 });
+    entregas += r.entregas;
+    aros += r.aros;
     choques += r.choques;
   }
-  const pct = Math.round(entregadas / traidas * 100);
-  console.log(`    piloto: entrega el ${pct} % de lo que trae, ${(choques / 12).toFixed(1)} choques por partida`);
-  assert.ok(pct >= 75, `solo entregó el ${pct} %`);
+  const pct = Math.round(entregas / aros * 100);
+  console.log(`    piloto sin hallazgos: ${pct} % de los aros, ${(choques / 12).toFixed(1)} choques por partida`);
+  assert.ok(pct >= 75, `solo atravesó el ${pct} %`);
   assert.ok(choques / 12 <= 2, 'volando bien no debería chocar tanto');
 });
 
-test('no se puede entregar más de lo que se trajo de El Camino', () => {
-  for (const hallazgos of [0, 3, 9, 14]) {
-    const { r } = volar(piloto, { semilla: 21, hallazgos });
-    assert.equal(r.sobresIniciales, VUELO.sobresBase + hallazgos);
-    assert.ok(r.entregas <= r.sobresIniciales, 'entregó más sobres de los que llevaba');
+test('nunca se queda sin nada que entregar: los aros cuentan hasta el último segundo', () => {
+  const v = new Vuelo(generarCielo(21), 0);
+  let alFinal = 0;
+  while (!v.terminado) {
+    v.actualizar(DT, piloto(v));
+    if (v.t > VUELO.duracion - 20) alFinal += v.eventos.filter((e) => e.tipo === 'entrega').length;
   }
+  assert.ok(alFinal >= 5, `en los últimos 20 s solo entregó ${alFinal}`);
 });
 
-test('traer más hallazgos permite entregar más: la etapa anterior cuenta', () => {
+test('traer más hallazgos da más puntos por lo mismo: la etapa anterior cuenta', () => {
+  assert.equal(new Vuelo(generarCielo(1), 0).multiplicador, 1);
+  assert.equal(new Vuelo(generarCielo(1), 4).multiplicador, 1.5);
+  assert.equal(new Vuelo(generarCielo(1), 20).multiplicador, 2, 'con tope: el doble');
   const pocos = volar(piloto, { semilla: 4, hallazgos: 0 }).r;
-  const muchos = volar(piloto, { semilla: 4, hallazgos: 10 }).r;
-  assert.ok(muchos.entregas > pocos.entregas,
-    `con 10 hallazgos entregó ${muchos.entregas} y con 0, ${pocos.entregas}`);
+  const muchos = volar(piloto, { semilla: 4, hallazgos: 8 }).r;
+  console.log(`    piloto: ${pocos.puntos} puntos sin hallazgos, ${muchos.puntos} con 8`);
+  assert.ok(muchos.puntos > pocos.puntos * 1.6, `con 8 hizo ${muchos.puntos} y con 0, ${pocos.puntos}`);
+});
+
+test('lo encontrado en El Camino abre el paso: con más hallazgos, menos choques', () => {
+  assert.equal(new Vuelo(generarCielo(1), 0).hueco, VUELO.hueco);
+  assert.equal(new Vuelo(generarCielo(1), 4).hueco, VUELO.hueco + 4 * VUELO.huecoPorHallazgo);
+  assert.equal(new Vuelo(generarCielo(1), 50).hueco, VUELO.hueco + VUELO.huecoExtraMax, 'con tope');
+
+  // Una persona que apunta mal: se desvía del centro del paso.
+  const torpe = (v) => {
+    const siguiente = v.columnas.find((c) => c.x > v.x);
+    const objetivo = (siguiente ? siguiente.y : 300) + Math.sin(v.t * 1.7) * 75;
+    return v.volando && v.y > objetivo + 12;
+  };
+  let choquesPocos = 0, choquesMuchos = 0, entregasPocos = 0, entregasMuchos = 0;
+  for (let semilla = 1; semilla <= 20; semilla++) {
+    const a = volar(torpe, { semilla, hallazgos: 0 }).r;
+    const b = volar(torpe, { semilla, hallazgos: 8 }).r;
+    choquesPocos += a.choques; choquesMuchos += b.choques;
+    entregasPocos += a.entregas; entregasMuchos += b.entregas;
+  }
+  console.log(`    torpe: ${choquesPocos / 20} choques sin hallazgos, ${choquesMuchos / 20} con 8; ` +
+    `entrega ${entregasPocos / 20} frente a ${entregasMuchos / 20}`);
+  assert.ok(choquesMuchos < choquesPocos, 'el paso ancho debía hacer chocar menos');
+  assert.ok(entregasMuchos > entregasPocos, 'y permitir entregar más');
 });
 
 test('el seguimiento se cuenta una sola vez por puesto', () => {
@@ -146,10 +176,10 @@ test('el vuelo dura lo que dice, y el mundo avanza igual para los dos', () => {
     'chocar no puede dejar a nadie atrás: el cielo corre igual para todos');
 });
 
-test('gana quien más entrega; desempatan el seguimiento y los choques', () => {
-  const base = { entregas: 5, seguimientos: 3, choques: 1 };
-  assert.equal(ganadorVuelo([base, { ...base, entregas: 7 }]), 1);
-  assert.equal(ganadorVuelo([{ ...base, seguimientos: 4 }, base]), 0);
+test('gana quien más puntos hace; desempatan las entregas y los choques', () => {
+  const base = { puntos: 700, entregas: 5, seguimientos: 3, choques: 1 };
+  assert.equal(ganadorVuelo([base, { ...base, puntos: 900 }]), 1);
+  assert.equal(ganadorVuelo([{ ...base, entregas: 6 }, base]), 0);
   assert.equal(ganadorVuelo([base, { ...base, choques: 0 }]), 1);
   assert.equal(ganadorVuelo([base, { ...base }]), -1, 'empate perfecto');
   assert.equal(ganadorVuelo([base]), 0);

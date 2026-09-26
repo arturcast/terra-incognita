@@ -5,7 +5,7 @@ servidor.py — Sirve el juego en http://localhost:8740 SIN caché.
 Por qué no basta `python -m http.server`: ese servidor no le dice al
 navegador que no guarde los archivos, y Chrome puede seguir usando una copia
 vieja de un módulo después de actualizarlo. Pasó de verdad: tras añadir el modo
-de dos jugadores, el panel F9 seguía mostrando la versión anterior.
+de dos jugadores, el panel de mandos (J) seguía mostrando la versión anterior.
 
 Aquí cada respuesta lleva `Cache-Control: no-store`: cada recarga trae el
 código que hay en disco. En un stand donde se ajusta sobre la marcha, eso vale

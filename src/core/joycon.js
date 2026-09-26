@@ -60,7 +60,21 @@ export const QUIETUD = {
 };
 
 /** Calibración inicial: cuántas muestras quietas hacen falta y cuánto esperar. */
-const CALIBRACION = { muestras: 120, tiempoMax: 8000 };
+/**
+ * Calibración explícita. Para aceptar una muestra basta con que el mando esté
+ * APOYADO: acelerómetro quieto y giro sin sacudidas. No se exige que el giro
+ * marque poco (como en QUIETUD): un mando con mucho desvío —justo el que hay
+ * que calibrar— marca mucho estando quieto sobre la mesa, y antes se quedaba
+ * para siempre en «esperando que esté quieto» (visto por el usuario con un
+ * Joy-Con derecho con drift, 2026-09-26). El tope de magnitud solo descarta
+ * un giro evidente.
+ */
+const CALIBRACION = {
+  muestras: 120, tiempoMax: 8000,
+  desviacionMax: 4.0,    // °/s — sacudidas del giro (el ruido de un sensor gastado cabe)
+  accelDesvMax: 0.06,    // g   — el acelerómetro quieto: apoyado, no en la mano
+  magnitudMax: 40,       // °/s — por encima es un giro de verdad, no desvío
+};
 
 // Bits del acumulado de botones: derecha | compartido<<8 | izquierda<<16
 export const BOTON = {
@@ -377,6 +391,15 @@ export class JoyCon extends EventTarget {
     return this._escribir(0x10, b, amp > 0);
   }
 
+  /**
+   * Enciende las luces del riel con el número de jugador, como la Switch:
+   * una luz el Jugador 1, dos el Jugador 2. Se usa al vincular.
+   */
+  luzJugador(n) {
+    const mascara = [0x01, 0x03, 0x07, 0x0f][Math.max(0, Math.min(3, n - 1))];
+    return this._subcomando(0x30, [mascara]);
+  }
+
   /** Pulso de vibración. Es la forma normal de dar feedback háptico. */
   pulso(freq = 320, amp = 0.6, ms = 90) {
     this.vibrar(freq, amp);
@@ -399,9 +422,17 @@ export class JoyCon extends EventTarget {
     this._calInicio = ahoraMs();
     this._calN = 0;
     this._calSuma = { x: 0, y: 0, z: 0 };
+    // El centro del stick también se vuelve a medir, en reposo: un stick con
+    // drift deja de mover solo los menús. (No hay que tocar el stick.)
+    this._centroX = null;
+    this._centroSx = 0; this._centroSy = 0; this._centroN = 0;
   }
 
   get calibrando() { return this._calibrando; }
+  /** Avance de la calibración en curso, de 0 a 1 (1 si no está calibrando). */
+  get progresoCalibracion() {
+    return this._calibrando ? Math.min(1, (this._calN || 0) / CALIBRACION.muestras) : 1;
+  }
   get sesgoFiable() { return this._sesgoFiable; }
 
   /**
@@ -498,14 +529,24 @@ export class JoyCon extends EventTarget {
     // medir sobre valores corregidos impediría detectar la quietud justo
     // cuando más hace falta.
     const desv = Math.max(this._vGx.desviacion, this._vGy.desviacion, this._vGz.desviacion);
+    // Con un sesgo ya fiable, la magnitud se mira ya corregida: si no, un mando
+    // con mucho desvío nunca se daría por quieto y dejaría de corregirse solo.
+    const b0 = this._sesgo;
+    const magnitud = this._sesgoFiable
+      ? Math.hypot(this._vGx.media - b0.x, this._vGy.media - b0.y, this._vGz.media - b0.z)
+      : this._vGiro.media;
     s.quieto = this._vGiro.completa &&
-      this._vGiro.media < QUIETUD.magnitudMax &&
+      magnitud < QUIETUD.magnitudMax &&
       desv < QUIETUD.desviacionMax &&
       this._vAcc.desviacion < QUIETUD.accelDesvMax;
 
-    // --- calibración explícita: solo con el mando quieto
+    // --- calibración explícita: con el mando apoyado (ver CALIBRACION)
     if (this._calibrando) {
-      if (s.quieto) {
+      const apoyado = this._vGiro.completa &&
+        this._vGiro.media < CALIBRACION.magnitudMax &&
+        desv < CALIBRACION.desviacionMax &&
+        this._vAcc.desviacion < CALIBRACION.accelDesvMax;
+      if (apoyado) {
         this._calSuma.x += gx; this._calSuma.y += gy; this._calSuma.z += gz;
         if (++this._calN >= CALIBRACION.muestras) {
           this._sesgo = {

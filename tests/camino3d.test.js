@@ -52,7 +52,7 @@ function correr(estrategia, { semilla = 12, segundos = 80 } = {}) {
     const { carril, analizar } = estrategia(car);
     car.actualizar(DT, carril, analizar);
     objetos.sincronizar(car, DT, t);
-    escenario.actualizar(car.distancia, car.estacion, niebla, fondo);
+    escenario.actualizar(car.distancia, car.estacionId, niebla, fondo, DT);
     explorador.actualizar(car, DT);
     let visibles = 0;
     objetos.raiz.traverse((o) => { if (o.parent === objetos.raiz && o.visible) visibles++; });
@@ -96,10 +96,10 @@ test('nada se crea dentro del bucle: las reservas son fijas', () => {
   const tamanos = Object.fromEntries(
     Object.entries(objetos.reservas).map(([k, v]) => [k, v.length])
   );
-  assert.deepEqual(tamanos, { dato: 12, control: 5, muro: 7, oculto: 5, estacion: 2 });
+  assert.deepEqual(tamanos, { dato: 20, control: 7, muro: 9, oculto: 6, estacion: 2 });
   // Todas las piezas siguen colgando de la raíz: ninguna se quedó suelta.
   const hijos = objetos.raiz.children.length;
-  assert.equal(hijos, 12 + 5 + 7 + 5 + 2);
+  assert.equal(hijos, 20 + 7 + 9 + 6 + 2);
 });
 
 test('cada objeto se coloca en su carril y a su distancia', () => {
@@ -123,12 +123,34 @@ test('el entorno se recicla: nunca se queda atrás ni se aleja de más', () => {
   const niebla = new THREE.Fog(0xffffff, 30, 100);
   const fondo = new THREE.Color(0xffffff);
   for (const distancia of [0, 120, 400, 900, 1399]) {
-    escenario.actualizar(distancia, 2, niebla, fondo);
+    escenario.actualizar(distancia, 'montana', niebla, fondo);
     for (const g of escenario.props) {
       const dz = -g.position.z - distancia;     // metros por delante del jugador
       assert.ok(dz > -14 && dz < 240, `prop fuera de sitio a ${distancia} m: ${dz.toFixed(1)}`);
     }
   }
+});
+
+test('el pueblo y el desierto no se mezclan: cada pieza solo se ve en su zona', () => {
+  const escenario = new Escenario(THREE, {});
+  const niebla = new THREE.Fog(0xffffff, 30, 100);
+  const fondo = new THREE.Color(0xffffff);
+  escenario.configurar(2, CAMINO.largo);            // dos tramos: pueblo y desierto
+  const mitad = CAMINO.largo / 2;
+  for (const distancia of [0, 200, 500, mitad - 60, mitad + 30, 1000, 1350]) {
+    escenario.actualizar(distancia, 'manantial', niebla, fondo);
+    for (const g of [...escenario.props, ...escenario.desierto]) {
+      if (!g.visible) continue;
+      const s = -g.position.z;
+      const debia = s < mitad ? 'pueblo' : 'desierto';
+      assert.equal(g.userData.zona, debia, `a ${distancia} m: pieza de ${g.userData.zona} en zona de ${debia}`);
+    }
+  }
+  // En pleno pueblo no hay nada del desierto a la vista, y al revés.
+  escenario.actualizar(100, 'manantial', niebla, fondo);
+  assert.ok(escenario.desierto.every((g) => !g.visible) && escenario.props.some((g) => g.visible));
+  escenario.actualizar(1000, 'ramales', niebla, fondo);
+  assert.ok(escenario.props.every((g) => !g.visible) && escenario.desierto.some((g) => g.visible));
 });
 
 test('el explorador sigue su carril y se inclina hacia donde va', () => {

@@ -371,16 +371,16 @@ cercano. Faltan solo las de El Regreso (R-*) y las de la ruta (U-*).
 
 | Id | Archivo | Prioridad | Estado |
 |---|---|---|---|
-| C-01 | `camino-explorador-guia.png` | Alta | **Integrada** 2026-09-22 |
-| C-02 | `camino-explorador-j2-guia.png` | Media | **Integrada** 2026-09-22 |
-| C-10 | `obj-dato.png` | Alta | **Integrada** 2026-09-22 |
-| C-11 | `obj-oculto.png` | Alta | **Integrada** 2026-09-22 |
-| C-12 | `obj-control.png` | Alta | **Integrada** 2026-09-22 |
+| C-01 | `camino-explorador-guia.png` | Alta | Retirada 2026-09-26 (sin uso) |
+| C-02 | `camino-explorador-j2-guia.png` | Media | Retirada 2026-09-26 (sin uso) |
+| C-10 | `obj-dato.png` | Alta | Retirada 2026-09-26 (sin uso) |
+| C-11 | `obj-oculto.png` | Alta | Retirada 2026-09-26 (sin uso) |
+| C-12 | `obj-control.png` | Alta | Retirada 2026-09-26 (sin uso) |
 | C-13 | `obj-muro.png` | Alta | **Integrada** 2026-09-22 |
-| C-14 | `obj-lente.png` | Media | **Integrada** 2026-09-22 |
+| C-14 | `obj-lente.png` | Media | Retirada 2026-09-26 (sin uso) |
 | C-20 | `tex-camino-tierra.png` | Media | **Integrada** 2026-09-22 |
-| C-21 | `tex-fachada-caribe-1/2/3.png` | Media | **Integrada** 2026-09-22 |
-| C-22 | `tex-muro-paneles.png` | Baja | **Integrada** 2026-09-22 |
+| C-21 | `tex-fachada-caribe-1/2/3.png` | Media | Retirada 2026-09-26 (sin uso) |
+| C-22 | `tex-muro-paneles.png` | Baja | Retirada 2026-09-26 (sin uso) |
 | C-23 | `fig-palmera.png` | Media | **Integrada** 2026-09-22 |
 | C-24 | `fondo-horizonte.png` | Alta | **Integrada** 2026-09-22 |
 | C-3x | `est-*.png` (5) | Media | **Integrada** 2026-09-22 |
@@ -400,6 +400,70 @@ cercano. Faltan solo las de El Regreso (R-*) y las de la ruta (U-*).
 C-10/C-11/C-12/C-13/C-24. Son las que más cambian lo que se ve.
 
 ---
+
+## 7.1 Texturas de Tomb Raider (2026-09-25)
+
+**Origen:** el usuario entregó cuatro hojas de texturas extraídas de los juegos
+de Tomb Raider (Core Design / Eidos; hoy Crystal Dynamics / Embracer) y una
+captura del menú de la versión de Nintendo 64 como referencia de estilo. Están
+en `assets/originales/tomb-raider/`.
+
+**Decisión del usuario:** usarlas como **definitivas**. Se le advirtió que
+tienen derechos de autor de terceros y que el juego se proyecta en un evento de
+la compañía; **antes de exhibirlo conviene que Comunicaciones o Jurídica lo
+validen**. Si hubiera que retirarlas, basta con borrar los archivos `ui-*` y
+`tex-piramide`: el juego vuelve solo a los menús y pirámides dibujados por código.
+
+**Procesado:** `python herramientas/recortar-texturas.py`. Las casillas son
+pequeñas (70×72 px en Texturas4; 22 px en Texturas2, descartada por eso). Se
+recorta un píxel hacia adentro para no arrastrar la casilla vecina, se agranda
+con interpolación suave y se funden los bordes para que la repetición no se note.
+
+| Archivo | Sale de | Se usa en |
+|---|---|---|
+| `ui-lava.png` | Texturas4, lava (x 0, y 663) | Relleno de las letras de los títulos |
+| `ui-roca-lava.png` | Texturas4, roca con grietas rojas (x 70, y 88) | Fondo de los menús, pausa, instrucciones y pantalla de conexión |
+| `ui-roca-oscura.png` | Texturas4, roca oscura (x 0, y 232) | Relleno de las cajas de menú |
+| `ui-medallon.png` | Texturas4, medallón dorado (x 210, y 304) | Centro del aro de la portada |
+| `tex-piramide.png` | Texturas4, arenisca + hiladas de bloques por código | Pirámides de El Camino |
+| `ui-arenisca.png`, `ui-tallado.png` | Texturas4 | Arenisca: suelo de El Regreso, pirámides y la palabra AUDITORÍA de la portada; tallado: templos de El Camino |
+
+La cara de la protagonista de la referencia **no** se usa: ese espacio queda
+para el personaje propio cuando se modele.
+
+## 7.2 Horizontes de El Camino por zona (pendientes, 2026-09-25)
+
+El Camino tiene dos zonas que no se mezclan: templos entre palmeras y
+desierto con pirámides y volcanes. Cada una lleva su horizonte.
+**Ya están puestos** (originales en `assets/originales/`, 2508×627 → JPG 2048×512). El juego
+los busca: si existen `assets/fondo-templos.jpg` y `assets/fondo-desierto.jpg`,
+los usa; si no, usa las ilustraciones de cada tramo. Generar en **4:1 (por
+ejemplo 4096×1024)**, dejarlas en `assets/originales/` con estos nombres y el
+agente las revisa y procesa.
+
+El tercio de abajo debe ser simple y casi plano: queda detrás de la niebla y
+del camino. Sin personas, sin texto, sin logos.
+
+**`fondo-templos.png`**
+```
+Stylized low-poly game background, wide panoramic 4:1, warm late-afternoon
+light, a lush tropical jungle valley with ancient stone temple ruins (columns,
+lintels, broken pillars) half covered by vines, tall palm trees, soft haze in
+the distance, distant misty mountains, golden-orange sky with a few soft
+clouds, sandstone and warm ochre tones matching an adventure game from the
+90s, flat shading, no people, no text, no logo, no watermark, the lower third
+mostly flat and simple.
+```
+
+**`fondo-desierto.png`**
+```
+Stylized low-poly game background, wide panoramic 4:1, sunset over a vast
+desert, large ancient pyramids made of sandstone blocks, two dark volcanoes
+with a faint orange glow at their craters and thin smoke, rolling sand dunes,
+dramatic fiery orange and deep red sky fading to dark maroon at the top, heat
+haze, flat shading, no people, no text, no logo, no watermark, the lower third
+mostly flat and simple.
+```
 
 ## 8. Para el agente: cómo procesar las imágenes
 

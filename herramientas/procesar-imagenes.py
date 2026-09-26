@@ -27,20 +27,13 @@ DESTINO = os.path.join(RAIZ, "assets")
 
 # nombre -> (ancho final, ¿necesita transparencia?)
 PLAN = {
-    "obj-dato.png": (256, True),
-    "obj-oculto.png": (320, True),
-    "obj-control.png": (256, True),
     "obj-muro.png": (320, True),
-    "obj-lente.png": (192, True),
     "fig-palmera.png": (256, True),
-    "camino-explorador-guia.png": (512, True),
-    "camino-explorador-j2-guia.png": (512, True),
     "tex-camino-tierra.png": (512, False),
-    "tex-fachada-caribe-1.png": (512, False),
-    "tex-fachada-caribe-2.png": (512, False),
-    "tex-fachada-caribe-3.png": (512, False),
-    "tex-muro-paneles.png": (512, False),
     "fondo-horizonte.png": (2048, False),
+    # Horizontes de El Camino por zona (2508×627 → 2048 de ancho)
+    "fondo-templos.png": (2048, False),
+    "fondo-desierto.png": (2048, False),
     "est-manantial.png": (1024, False),
     "est-ramales.png": (1024, False),
     "est-montana.png": (1024, False),

@@ -62,7 +62,7 @@ En Windows, `abrir.cmd` hace las dos cosas de un doble clic. En macOS o Linux,
 
 ### Atajos mientras juegas
 
-`F` pantalla completa · `F9` panel de mandos del operador · `1` `2` `3` saltar
+`F` pantalla completa · `J` panel de mandos del operador (o `F9`) · `1` `2` `3` saltar
 a una etapa · `0` la pantalla del recorrido · `P` sala de prueba de dos
 jugadores · `C` calibrar · `R` recentrar · `M` silenciar · `Esc` volver al
 inicio.
@@ -74,10 +74,10 @@ inicio.
 Antes de tocar nada, y después de cada cambio:
 
 ```bash
-node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js
+node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js
 ```
 
-Resultado esperado hoy: **124 pruebas, 116 pasan, 0 fallan, 8 omitidas.** Las
+Resultado esperado hoy: **166 pruebas, 158 pasan, 0 fallan, 8 omitidas.** Las
 omitidas son pruebas de dirección sobre grabaciones antiguas del mando que no
 las permiten: es lo normal, no un fallo.
 
@@ -193,11 +193,12 @@ terra-incognita/
     ├── PLAN-GRAFICO-CAMINO.md       el 3D de El Camino
     ├── ACTIVOS-VISUALES.md          las imágenes: catálogo y prompts
     ├── MULTIJUGADOR.md              dos Joy-Con a la vez
-    ├── MODULO-MANDOS.md             batería, relevo, panel F9
+    ├── MODULO-MANDOS.md             batería, relevo, panel de mandos (J)
     ├── ESTABILIDAD.md               por qué falló el mando y cómo se prueba
     ├── PROTOCOLO-JOYCON.md          el protocolo HID, documentado
     ├── OPERACION-STAND.md           guion y checklist del día del evento
-    └── guion-web/                   la página con todos los textos del juego
+    ├── TEXTOS-DEL-JUEGO.md          todos los textos del juego, con código por línea
+    └── CINEMATICAS.md               los cinco videos: historia y prompts
 ```
 
 ---

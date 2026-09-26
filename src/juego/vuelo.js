@@ -8,24 +8,29 @@
  * que cambia es qué representa cada cosa:
  *
  *   LA PALOMA      — el mensajero. Lleva de vuelta lo que se encontró.
- *   LOS SOBRES     — el informe: tantos como hallazgos trajo de El Camino.
- *   LOS AROS       — las recomendaciones. Atravesar uno entrega un sobre.
+ *   LOS AROS       — las recomendaciones. Atravesar uno es entregar.
  *   LOS PUESTOS    — el seguimiento: volver a pasar y verificar que cambió.
  *   LAS COLUMNAS   — las excusas del seguimiento, meses después.
  *
- * Dos decisiones del usuario (2026-09-22), que viven aquí como constantes por
- * si hay que probar lo contrario en el stand:
- *   - Chocar NO termina la partida (`FIN_AL_CHOCAR`). En el original se muere;
- *     aquí, con dos jugadores, eso dejaría a una persona mirando 50 segundos.
- *     La paloma cae, pierde un sobre y vuelve.
- *   - Los dos juegan en EL MISMO cielo (`MISMO_CIELO`): las mismas columnas
- *     para los dos, que es lo que hace la competencia comparable.
+ * Decisiones del usuario, que viven aquí como constantes por si hay que probar
+ * lo contrario en el stand:
+ *   - Chocar NO termina la partida (`FIN_AL_CHOCAR`, 2026-09-22). En el
+ *     original se muere; aquí, con dos jugadores, eso dejaría a una persona
+ *     mirando 50 segundos. La paloma cae y vuelve: solo cuesta tiempo.
+ *   - Dos jugadores a PANTALLA PARTIDA (`PANTALLA_PARTIDA`, 2026-09-25; antes
+ *     volaban en el mismo cielo). Siguen volando las mismas columnas —misma
+ *     semilla—, así la competencia sigue siendo comparable.
+ *   - La etapa anterior pone la dificultad (2026-09-25): cuanto más se
+ *     encontró en El Camino, más ancho es el paso y más vale cada entrega.
+ *   - Nunca se queda sin nada que entregar (2026-09-25). Antes se llevaban
+ *     tantos «sobres» como hallazgos y, gastados, se volaba el resto del
+ *     minuto para nada. Ahora cada aro cuenta, del primero al último segundo.
  */
 
-/** Chocar no saca del juego: cuesta un sobre y tiempo. Decisión D2. */
+/** Chocar no saca del juego: solo cuesta el tiempo de la caída. Decisión D2. */
 export const FIN_AL_CHOCAR = false;
-/** Los dos jugadores vuelan el mismo cielo, no en pantalla partida. Decisión D3. */
-export const MISMO_CIELO = true;
+/** Cada jugador en su mitad de pantalla. Decisión D3, revisada el 2026-09-25. */
+export const PANTALLA_PARTIDA = true;
 
 export const VUELO = {
   alto: 720,             // alto lógico; el dibujo escala a la pantalla real
@@ -37,22 +42,30 @@ export const VUELO = {
   radio: 24,             // de la paloma, para los choques
   xPaloma: 260,          // a qué distancia del borde vuela
 
-  hueco: 200,            // alto del paso entre columnas
-  separacion: 270,       // px entre una columna y la siguiente
+  // Más fácil desde el 2026-09-25 (pedido del usuario): paso base más ancho
+  // (antes 200), columnas más separadas (antes 270) y saltos de altura más
+  // suaves entre una y otra (antes 150).
+  hueco: 230,            // alto del paso entre columnas, con cero hallazgos
+  huecoPorHallazgo: 13,  // px de paso de más por cada hallazgo traído de El Camino
+  huecoExtraMax: 104,    // tope: con 8 o más, el paso mide 334
+  separacion: 300,       // px entre una columna y la siguiente
   margen: 130,           // lo que nunca se pega al techo ni al suelo
-  saltoMax: 150,         // cuánto puede subir o bajar el paso de una a otra
+  saltoMax: 120,         // cuánto puede subir o bajar el paso de una a otra
   anchoColumna: 62,
 
-  probAro: 0.55,         // cuántos pasos llevan un aro dorado
-  radioAro: 46,          // hay que pasar cerca del centro para entregar
+  probAro: 0.7,          // cuántos pasos llevan un aro dorado (antes 0,55)
+  radioAro: 54,          // hay que pasar cerca del centro para entregar (antes 46)
 
   duracion: 60,          // s de vuelo
   reaparicion: 1.4,      // s en el suelo tras chocar
   invulnerable: 1.2,     // s de gracia al volver
   puestoCada: 14,        // s entre puestos de control
 
-  sobresBase: 3,         // aunque venga de una carrera floja, siempre lleva algo
   puntos: { entrega: 100, seguimiento: 60 },
+  // Cada hallazgo traído de El Camino hace valer más cada entrega:
+  // +12,5 % por hallazgo, hasta el doble con 8.
+  bonoPorHallazgo: 0.125,
+  bonoMax: 1,
 };
 
 /** Lo que dicen las columnas. Son las excusas del seguimiento, no las de la visita. */
@@ -122,13 +135,20 @@ export function generarCielo(semilla) {
 export class Vuelo {
   /**
    * @param {{columnas: Array, puestos: Array}} cielo
-   * @param {number} hallazgos los que trajo de El Camino: son sus sobres.
+   * @param {number} hallazgos los que trajo de El Camino: le abren el paso y
+   *   hacen valer más cada entrega.
    */
   constructor(cielo, hallazgos = 0) {
     this.columnas = cielo.columnas.map((c) => ({ ...c, pasada: false, aroTomado: false }));
     this.puestos = cielo.puestos.map((p) => ({ ...p, pasado: false }));
-    this.sobres = VUELO.sobresBase + Math.max(0, hallazgos | 0);
-    this.sobresIniciales = this.sobres;
+    const h = Math.max(0, hallazgos | 0);
+    this.hallazgos = h;
+    // Lo que se encontró en El Camino abre el paso: cada jugador el suyo.
+    this.extraHueco = Math.min(VUELO.huecoExtraMax, h * VUELO.huecoPorHallazgo);
+    this.hueco = VUELO.hueco + this.extraHueco;
+    this.radioAro = VUELO.radioAro + this.extraHueco * 0.5;
+    // …y hace valer más cada entrega.
+    this.multiplicador = 1 + Math.min(VUELO.bonoMax, h * VUELO.bonoPorHallazgo);
 
     this.t = 0;
     this.distancia = 0;
@@ -140,9 +160,9 @@ export class Vuelo {
     this.aleteos = 0;
 
     this.entregas = 0;
+    this.aros = 0;             // aros que ha tenido delante (para saber cuántos se le escaparon)
     this.seguimientos = 0;
     this.choques = 0;
-    this.perdidos = 0;         // sobres que se cayeron al chocar
     this.pasos = 0;            // columnas cruzadas sin chocar
     this.eventos = [];
 
@@ -153,11 +173,11 @@ export class Vuelo {
   get terminado() { return this.t >= VUELO.duracion; }
   get volando() { return this.caido <= 0; }
   get x() { return this.distancia + VUELO.xPaloma; }
+  /** Lo que vale una entrega para este jugador. */
+  get valorEntrega() { return Math.round(VUELO.puntos.entrega * this.multiplicador); }
   get puntos() {
-    return this.entregas * VUELO.puntos.entrega + this.seguimientos * VUELO.puntos.seguimiento;
+    return this.entregas * this.valorEntrega + this.seguimientos * VUELO.puntos.seguimiento;
   }
-  /** Lo que todavía no ha entregado. Si llega a cero, ya no hay nada que dar. */
-  get porEntregar() { return this.sobres; }
 
   _evento(tipo, datos = {}) { this.eventos.push({ tipo, ...datos }); }
 
@@ -173,7 +193,6 @@ export class Vuelo {
   _chocar(motivo) {
     this.choques++;
     this._evento('choque', { motivo });
-    if (this.sobres > 0) { this.sobres--; this.perdidos++; }
     this.caido = VUELO.reaparicion;
     this.vy = 0;
   }
@@ -229,20 +248,20 @@ export class Vuelo {
     while (this._i < this.columnas.length && this.columnas[this._i].x <= x) {
       const c = this.columnas[this._i++];
       c.pasada = true;
+      if (c.aro) this.aros++;
       if (this.caido > 0) continue;               // estaba en el suelo: no cuenta
-      const dentro = Math.abs(this.y - c.y) < VUELO.hueco / 2 - VUELO.radio * 0.4;
+      const dentro = Math.abs(this.y - c.y) < this.hueco / 2 - VUELO.radio * 0.4;
       if (!dentro) {
         if (this.invulnerable <= 0) this._chocar(c.texto);
         continue;
       }
       this.pasos++;
-      if (c.aro && Math.abs(this.y - c.y) < VUELO.radioAro && this.sobres > 0) {
+      // Recién vuelta de un choque, todavía aturdida, no entrega: así quien no
+      // vuela no suma por caer de casualidad dentro de un aro.
+      if (c.aro && this.invulnerable <= 0 && Math.abs(this.y - c.y) < this.radioAro) {
         c.aroTomado = true;
-        this.sobres--;
         this.entregas++;
-        this._evento('entrega', { quedan: this.sobres });
-      } else if (c.aro && this.sobres === 0) {
-        this._evento('sinSobres');
+        this._evento('entrega', { valor: this.valorEntrega });
       }
     }
 
@@ -259,29 +278,30 @@ export class Vuelo {
   resultado() {
     return {
       entregas: this.entregas,
-      sobresIniciales: this.sobresIniciales,
-      sinEntregar: this.sobres,
+      aros: this.aros,
       seguimientos: this.seguimientos,
       choques: this.choques,
-      perdidos: this.perdidos,
       pasos: this.pasos,
       aleteos: this.aleteos,
       puntos: this.puntos,
+      hueco: this.hueco,
+      multiplicador: this.multiplicador,
+      hallazgos: this.hallazgos,
     };
   }
 }
 
 /**
- * Quién gana: el que más entregó. Desempata el seguimiento, y después el
- * que menos chocó. Devuelve el índice, o -1 si es empate perfecto.
+ * Quién gana: el que más puntos hizo (entregas, con lo que valen según lo
+ * traído de El Camino, más seguimiento). Desempatan las entregas y después
+ * el que menos chocó. Devuelve el índice, o -1 si es empate perfecto.
  */
 export function ganadorVuelo(resultados) {
   if (resultados.length < 2) return 0;
   let mejor = 0, empate = false;
   for (let i = 1; i < resultados.length; i++) {
     const a = resultados[i], b = resultados[mejor];
-    const cmp = (a.entregas - b.entregas) || (a.seguimientos - b.seguimientos) ||
-      (b.choques - a.choques);
+    const cmp = (a.puntos - b.puntos) || (a.entregas - b.entregas) || (b.choques - a.choques);
     if (cmp > 0) { mejor = i; empate = false; }
     else if (cmp === 0) empate = true;
   }

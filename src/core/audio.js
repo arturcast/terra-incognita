@@ -1,7 +1,13 @@
 /**
- * audio.js — Música y sonidos, generados en el momento.
+ * audio.js — Música y sonidos.
  *
- * No hay archivos de audio. Todo se sintetiza con Web Audio API. La razón es
+ * MÚSICA (desde 2026-09-26, pedido del usuario): el tema principal de Tomb
+ * Raider (1996), en `assets/musica/tema.mp3`, en bucle durante todo el juego.
+ * OJO: es música con derechos de autor; el usuario lo decidió así, igual que
+ * con las texturas (docs/ACTIVOS-VISUALES.md §7.1). Si el archivo no está o no
+ * se puede leer, suena la música generada de siempre, que se describe abajo.
+ *
+ * Los efectos no usan archivos: se sintetizan con Web Audio API. La razón es
  * la misma que rige el resto del proyecto: cero dependencias y cero descargas,
  * porque la red del evento puede no dejar salir a ningún servidor y Sophos
  * bloquea binarios ajenos. Un .mp3 además pesa; esto pesa cero.
@@ -21,6 +27,16 @@ const ESCALAS = {
   tension: [0, 2, 3, 5, 7, 8, 10],
   logro: [0, 2, 4, 5, 7, 9, 11],      // mayor — revelación
 };
+
+/** El tema que suena en todo el juego. Si falta, música generada. */
+const TEMA = './assets/musica/tema.mp3';
+/**
+ * Volumen del tema. La grabación es fuerte (RMS ≈ −13 dB): a 0,32 queda en
+ * torno a −23 dB, por debajo de los efectos, que tienen que oírse.
+ */
+const VOLUMEN_TEMA = 0.32;
+/** Dónde empieza el sonido (s): el archivo trae 0,18 s de silencio. Termina con su propio fundido. */
+const INICIO_TEMA = 0.18;
 
 const PISTAS = {
   intro: {
@@ -111,7 +127,54 @@ export class Audio {
     this.busSfx.connect(this.maestro);
     this.busSfx.connect(this.envioReverb);
 
+    // El tema va directo a la salida: ya trae su propia sala, sin reverberación.
+    this.busTema = this.ctx.createGain();
+    this.busTema.gain.value = 0;
+    this.busTema.connect(this.maestro);
+
     this.activo = true;
+    this._cargarTema();
+  }
+
+  /** Carga el tema sin frenar el arranque. Mientras llega, no suena nada. */
+  async _cargarTema() {
+    this.tema = null;
+    this._temaCargando = true;
+    try {
+      const r = await fetch(TEMA);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      this.tema = await this.ctx.decodeAudioData(await r.arrayBuffer());
+    } catch (e) {
+      console.warn('Sin tema musical, suena la música generada:', e && e.message);
+    }
+    this._temaCargando = false;
+    // Si alguien pidió música mientras cargaba, ahora sí.
+    const pedida = this._nombrePista;
+    this._nombrePista = null;
+    if (pedida) this.musica(pedida);
+  }
+
+  /** Sube o baja la música (el tema o la generada) hasta `valor` (0-1) en `seg` segundos. */
+  _rampaMusica(valor, seg) {
+    const t = this.ctx.currentTime;
+    for (const [bus, escala] of [[this.busMusica, 1], [this.busTema, VOLUMEN_TEMA]]) {
+      bus.gain.cancelScheduledValues(t);
+      bus.gain.setValueAtTime(bus.gain.value, t);
+      bus.gain.linearRampToValueAtTime(valor * escala, t + seg);
+    }
+  }
+
+  /** Pone a sonar el tema en bucle, si no sonaba ya. Sigue donde iba. */
+  _sonarTema() {
+    if (this._fuenteTema) return;
+    const f = this.ctx.createBufferSource();
+    f.buffer = this.tema;
+    f.loop = true;
+    f.loopStart = INICIO_TEMA;
+    f.loopEnd = this.tema.duration;
+    f.connect(this.busTema);
+    f.start(this.ctx.currentTime + 0.05, INICIO_TEMA);
+    this._fuenteTema = f;
   }
 
   _impulso(duracion, decaimiento) {
@@ -134,6 +197,16 @@ export class Audio {
     const def = PISTAS[nombre];
     if (!def) return;
 
+    // Con el tema cargado, todas las pantallas usan el mismo: no se reinicia
+    // al cambiar de pantalla, solo vuelve a subir si estaba bajado.
+    if (this._temaCargando) { this._nombrePista = nombre; return; }
+    if (this.tema) {
+      this._nombrePista = nombre;
+      this._sonarTema();
+      this._rampaMusica(this.silenciado ? 0 : 1, 1.2);
+      return;
+    }
+
     const t = this.ctx.currentTime;
     this.busMusica.gain.cancelScheduledValues(t);
     this.busMusica.gain.setValueAtTime(this.busMusica.gain.value, t);
@@ -151,12 +224,18 @@ export class Audio {
     }
   }
 
+  /**
+   * Baja la música del juego mientras suena una cinemática (el video trae su
+   * propio sonido) y la devuelve después. No cambia de pista.
+   */
+  atenuarMusica(si) {
+    if (!this.activo) return;
+    this._rampaMusica(si || this.silenciado ? 0 : 1, si ? 0.4 : 1.2);
+  }
+
   detenerMusica() {
     if (!this.activo) return;
-    const t = this.ctx.currentTime;
-    this.busMusica.gain.cancelScheduledValues(t);
-    this.busMusica.gain.setValueAtTime(this.busMusica.gain.value, t);
-    this.busMusica.gain.linearRampToValueAtTime(0, t + 0.8);
+    this._rampaMusica(0, 0.8);
     this._nombrePista = null;
     this.pista = null;
   }
@@ -328,8 +407,7 @@ export class Audio {
     this.silenciado = !this.silenciado;
     if (this.activo) {
       const t = this.ctx.currentTime;
-      this.busMusica.gain.cancelScheduledValues(t);
-      this.busMusica.gain.linearRampToValueAtTime(this.silenciado ? 0 : 1, t + 0.3);
+      this._rampaMusica(this.silenciado ? 0 : 1, 0.3);
       this.busSfx.gain.linearRampToValueAtTime(this.silenciado ? 0 : 0.85, t + 0.3);
     }
     return this.silenciado;

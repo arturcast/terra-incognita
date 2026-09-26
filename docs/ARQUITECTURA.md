@@ -137,10 +137,12 @@ sobra para una nota sobre cien.
 evento, con gente esperando, un mando que se duerme no puede ser el final de la
 demo. Cada escena comprueba `jc.estado.conectado` y cae al ratón sola.
 
-**La costa se normaliza a un recuadro fijo.** La suma de senos que genera la
-silueta no es simétrica, así que ajustar la escala a ojo dejaba la masa de
-tierra descentrada y cortada por un borde. Normalizar el resultado a un
-recuadro conocido elimina la constante mágica.
+**La costa se calca del dibujo del mapa.** Desde el 2026-09-25 la Etapa 1
+pinta una ilustración (`assets/mapa-territorio.jpg`) a pantalla completa, y
+la costa de `territorio.js` ya no es una fórmula: son 160 puntos calcados de
+esa imagen con `herramientas/calcar-costa.py`. Los lugares van encima de su
+dibujo. Si se cambia la imagen, hay que volver a calcar la costa, reubicar los
+lugares y correr las tres verificaciones de `AGENTS.md` §6.
 
 **El texto se mide antes de dibujarse.** La primera versión apilaba bloques con
 coordenadas fijas y en cuanto creció una frase los títulos se montaron unos

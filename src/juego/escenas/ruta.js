@@ -20,7 +20,13 @@
 import { Escena } from '../../core/engine.js';
 import { Acciones } from '../../core/input.js';
 import { partirLineas } from '../../core/briefing.js';
-import { PALETA, FUENTE, grano, vineta, suave, limitar } from '../../core/render.js';
+import {
+  PALETA, FUENTE, MENU, grano, vineta, suave, limitar, fondoMenu, tituloMenu, textoMenu,
+} from '../../core/render.js';
+
+/** Colores de la ruta, los mismos de los menús: oro para lo hecho, beige para lo demás. */
+const ORO = '#f0c977';
+const BEIGE_TENUE = '#bfae82';
 import { generarCosta, generarIsla, REGIONES } from '../../datos/territorio.js';
 
 /** Las tres paradas del recorrido, en orden. */
@@ -128,6 +134,8 @@ export class EscenaRuta extends Escena {
       this._yendo = true;
       this.audio && this.audio.sfx('fase');
       if (this.existeSiguiente) this.motor.ir(this.siguiente.id);
+      // Terminadas las tres: primero el recuento de puntos y los nombres.
+      else if (!this.siguiente && this.motor.escenas.has('recuento')) this.motor.ir('recuento');
       else this.motor.ir('cierre', this.motor.expedicion.puntajes.mapa || null);
     }
   }
@@ -171,8 +179,7 @@ export class EscenaRuta extends Escena {
   dibujar(c) {
     const W = this.motor.ancho, H = this.motor.alto;
 
-    c.fillStyle = PALETA.fondoHondo;
-    c.fillRect(0, 0, W, H);
+    fondoMenu(c, W, H);
     this._fondo(c, W, H);
 
     // Al entrar, todo se acerca a la parada siguiente: la pantalla "entra" en ella.
@@ -201,7 +208,7 @@ export class EscenaRuta extends Escena {
   /** El territorio de la Etapa 1, apenas insinuado: es el mismo mundo. */
   _fondo(c, W, H) {
     c.save();
-    c.globalAlpha = 0.13;
+    c.globalAlpha = 0.12;
     const trazar = (pts, ox = 0, oy = 0) => {
       c.beginPath();
       pts.forEach((p, i) => {
@@ -209,9 +216,9 @@ export class EscenaRuta extends Escena {
         i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
       });
       c.closePath();
-      c.fillStyle = PALETA.territorio;
+      c.fillStyle = '#000';
       c.fill();
-      c.strokeStyle = PALETA.costa;
+      c.strokeStyle = '#e8c872';
       c.lineWidth = 1.5;
       c.stroke();
     };
@@ -225,20 +232,17 @@ export class EscenaRuta extends Escena {
     const cx = W / 2;
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    const y = Math.max(28, H * 0.10);
+    const tam = Math.min(62, W * 0.055);
+    const y = Math.max(28, H * 0.08);
 
-    c.font = '13px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.oro;
-    c.fillText('T U   R E C O R R I D O', cx, y);
-
-    c.font = 'italic 19px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tintaTenue;
+    tituloMenu(c, 'Tu recorrido', cx, y + tam / 2, tam);
+    c.textBaseline = 'top';
     const frase = !this.recien
       ? 'Tres tramos. Empecemos por el primero.'
       : this.siguiente
         ? 'Un tramo menos. Queda camino.'
         : 'Recorriste los tres tramos.';
-    c.fillText(frase, cx, y + 24);
+    textoMenu(c, frase, cx, y + tam * 1.15, 20, BEIGE_TENUE);
   }
 
   _pie(c, W, H) {
@@ -246,12 +250,10 @@ export class EscenaRuta extends Escena {
     const nombre = this.acciones[this.motor.jugadoresActivos[0] || 0].nombreConfirmar;
     c.textAlign = 'center';
     c.textBaseline = 'bottom';
-    c.font = '15px ' + FUENTE.interfaz;
-    c.fillStyle = Math.sin(this.t * 4) > -0.4 ? PALETA.tintaTenue : PALETA.tintaDebil;
     const texto = this.existeSiguiente
       ? 'Pulsa ' + nombre + ' para entrar ya'
       : 'Pulsa ' + nombre + ' para continuar';
-    c.fillText(texto, W / 2, H - 26);
+    textoMenu(c, texto, W / 2, H - 26, 17, Math.sin(this.t * 4) > -0.4 ? MENU.beige : BEIGE_TENUE);
   }
 
   /** El sendero punteado, que se ilumina de una parada a la siguiente. */
@@ -314,48 +316,63 @@ export class EscenaRuta extends Escena {
     c.translate(d.x, d.y);
     c.scale(latido, latido);
 
-    // disco
+    // disco: piedra oscura con doble anillo, como las cajas de los menús
+    const encendida = esSiguiente && this.t >= T.senda;
     c.beginPath();
     c.arc(0, 0, r, 0, Math.PI * 2);
-    c.fillStyle = 'rgba(6,10,16,0.88)';
+    c.fillStyle = 'rgba(10,5,3,0.9)';
     c.fill();
+    c.lineWidth = 4;
+    c.strokeStyle = '#150b05';
+    c.stroke();
+    c.beginPath();
+    c.arc(0, 0, r - 4, 0, Math.PI * 2);
     c.lineWidth = despierta ? 3 : 2;
-    c.strokeStyle = sellada ? PALETA.exito
-      : esSiguiente && this.t >= T.senda ? PALETA.oro
-        : 'rgba(217,164,65,0.22)';
+    c.strokeStyle = sellada ? ORO : encendida ? PALETA.oro : 'rgba(205,187,138,0.3)';
     c.stroke();
 
-    if (esSiguiente && this.t >= T.senda) {
+    if (encendida) {
+      // halo que late, del color del fuego
       c.beginPath();
-      c.arc(0, 0, r + 8 + Math.sin(this.t * 3.4) * 3, 0, Math.PI * 2);
-      c.strokeStyle = 'rgba(217,164,65,0.28)';
-      c.lineWidth = 2;
+      c.arc(0, 0, r + 9 + Math.sin(this.t * 3.4) * 3, 0, Math.PI * 2);
+      c.strokeStyle = 'rgba(246,169,44,0.35)';
+      c.lineWidth = 3;
       c.stroke();
     }
 
-    // número
+    // número: de fuego si está despierta, apagado si no
     c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.font = Math.round(r * 0.95) + 'px ' + FUENTE.narrativa;
-    c.fillStyle = sellada ? 'rgba(232,217,181,0.45)' : despierta ? PALETA.tinta : PALETA.tintaDebil;
-    c.fillText(p.n, 0, 1);
+    if (despierta && !sellada) {
+      tituloMenu(c, p.n, 0, 2, Math.round(r * 1.05));
+    } else {
+      c.textBaseline = 'middle';
+      c.font = 'bold ' + Math.round(r * 0.95) + 'px ' + MENU.letra;
+      c.fillStyle = sellada ? 'rgba(233,220,180,0.35)' : 'rgba(205,187,138,0.35)';
+      c.fillText(p.n, 0, 2);
+    }
 
-    // el sello: cae con rebote sobre el número
+    // el sello: cae con rebote sobre el número, en oro con contorno oscuro
     if (sellada) {
       const k = esRecien ? limitar((this.t - T.sello) / 0.45, 0, 1) : 1;
       const escala = esRecien ? 1 + (1 - suave(k)) * 1.9 : 1;
       c.save();
       c.scale(escala, escala);
       c.globalAlpha = esRecien ? suave(limitar(k * 1.6, 0, 1)) : 1;
-      c.strokeStyle = PALETA.exito;
-      c.lineWidth = Math.max(4, r * 0.13);
       c.lineCap = 'round';
       c.lineJoin = 'round';
-      c.beginPath();
-      c.moveTo(-r * 0.42, 0);
-      c.lineTo(-r * 0.12, r * 0.30);
-      c.lineTo(r * 0.45, -r * 0.34);
-      c.stroke();
+      const trazo = () => {
+        c.beginPath();
+        c.moveTo(-r * 0.42, 0);
+        c.lineTo(-r * 0.12, r * 0.30);
+        c.lineTo(r * 0.45, -r * 0.34);
+        c.stroke();
+      };
+      c.strokeStyle = '#1e0402';
+      c.lineWidth = Math.max(7, r * 0.2);
+      trazo();
+      c.strokeStyle = ORO;
+      c.lineWidth = Math.max(4, r * 0.12);
+      trazo();
       c.restore();
     }
     c.restore();
@@ -366,34 +383,29 @@ export class EscenaRuta extends Escena {
     c.textAlign = 'center';
     c.textBaseline = 'top';
 
-    c.font = '25px ' + FUENTE.narrativa;
-    c.fillStyle = despierta ? PALETA.tinta : PALETA.tintaDebil;
-    c.fillText(p.titulo, d.x, y);
-    y += 32;
+    textoMenu(c, p.titulo, d.x, y, 27, despierta ? MENU.beige : 'rgba(205,187,138,0.5)');
+    y += 34;
 
-    c.font = '16px ' + FUENTE.interfaz;
-    c.fillStyle = despierta ? PALETA.tintaTenue : 'rgba(90,96,104,0.75)';
-    partirLineas(c, p.que, ancho).forEach((l) => { c.fillText(l, d.x, y); y += 22; });
+    c.font = '17px ' + MENU.letra;
+    partirLineas(c, p.que, ancho).forEach((l) => {
+      textoMenu(c, l, d.x, y, 17, despierta ? BEIGE_TENUE : 'rgba(191,174,130,0.45)');
+      y += 22;
+    });
     y += 4;
 
     c.font = '12px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.tintaDebil;
+    c.fillStyle = 'rgba(205,187,138,0.6)';
     c.fillText(p.quienes, d.x, y);
     y += 21;
 
     const resumen = sellada ? this._resumen(p.id) : null;
     if (resumen) {
-      c.font = '15px ' + FUENTE.interfaz;
-      c.fillStyle = PALETA.exito;
-      partirLineas(c, resumen, ancho).forEach((l) => { c.fillText(l, d.x, y); y += 20; });
-    } else if (esSiguiente && this.t >= T.senda && !this.existeSiguiente) {
-      c.font = '13px ' + FUENTE.instrumento;
+      c.font = '16px ' + MENU.letra;
+      partirLineas(c, resumen, ancho).forEach((l) => { textoMenu(c, l, d.x, y, 16, ORO); y += 20; });
+    } else if (encendida) {
+      c.font = 'bold 13px ' + FUENTE.instrumento;
       c.fillStyle = PALETA.oro;
-      c.fillText('PRÓXIMAMENTE', d.x, y);
-    } else if (esSiguiente && this.t >= T.senda) {
-      c.font = '13px ' + FUENTE.instrumento;
-      c.fillStyle = PALETA.oro;
-      c.fillText('AHORA', d.x, y);
+      c.fillText(this.existeSiguiente ? 'AHORA' : 'PRÓXIMAMENTE', d.x, y);
     }
   }
 }

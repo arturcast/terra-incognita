@@ -14,7 +14,7 @@ trabaje sobre este repositorio. Léelo completo antes de la primera edición.
    lo que sigue en orden (fichas con criterio de aceptación), decisiones
    pendientes del usuario (D1-D3) e historial de decisiones.
 2. Lee este archivo completo: las reglas no se negocian.
-3. Corre la batería de pruebas (§6). Debe dar 116 pass, 0 fail, 8 skipped
+3. Corre la batería de pruebas (§6). Debe dar 158 pass, 0 fail, 8 skipped
    antes de que toques nada.
 4. Construye **una** ficha a la vez, en el orden del plan, y actualiza su
    estado en el plan al terminar. No marques «hecho» lo que el usuario no
@@ -237,7 +237,7 @@ python servidor.py   # sin caché; ver servidor.py
 dependencias. Ver [`docs/ESTABILIDAD.md`](docs/ESTABILIDAD.md).
 
 ```bash
-node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js
+node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js
 ```
 
 `camino.test.js` vigila el equilibrio de El Camino (jugar en el centro sin
@@ -349,7 +349,7 @@ Cualquier cambio en `territorio.js` obliga a correr las tres.
 | Música y efectos de sonido | `src/core/audio.js` |
 | Pantallas de instrucciones | `src/core/briefing.js` + el constructor de cada escena |
 | Mandos, batería, cambio en caliente | `src/core/mandos.js` |
-| Panel del operador (F9) | `src/ui/panel-mandos.js` |
+| Panel del operador (tecla J, o F9) | `src/ui/panel-mandos.js` |
 | Escena de dos jugadores | copiar la estructura de `src/juego/escenas/prueba2j.js`; ver `docs/MULTIJUGADOR.md` |
 | Añadir una etapa nueva | `docs/DISENO-JUEGO.md` primero, luego `src/juego/escenas/` |
 | Entender el tono permitido | `docs/NARRATIVA.md` |

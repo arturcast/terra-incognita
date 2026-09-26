@@ -29,13 +29,13 @@ Orden de lectura para retomar en frío:
 | Ruta de etapas (pantalla entre etapas) | Terminada | Pruebas automáticas; **falta Chrome** |
 | Etapa 3 · El Regreso (1 o 2 jugadores) | Terminada | Pruebas automáticas; **falta Chrome** |
 | Ruta de etapas (pantalla entre etapas) | Terminada | Pruebas automáticas; **falta Chrome** |
-| Gestor de mandos, panel F9, batería, relevo | Terminado | Chrome con Joy-Con |
+| Gestor de mandos, panel de mandos (J), batería, relevo | Terminado | Chrome con Joy-Con |
 | Modo de dos jugadores (ranuras, pantalla partida) | Terminado | Dos Joy-Con reales: R 60,5 Hz y L 66,8 Hz a la vez |
-| Jugador 2 se une pulsando un botón de su mando | Terminado | Probado por el usuario: entra sin F9 |
+| Jugador 2 se une pulsando un botón de su mando | Terminado | Probado por el usuario: entra sin el panel |
 | Estabilidad del mando (8 causas corregidas) | Terminado | Pruebas simuladas + grabaciones reales (`tests/capturas/`) |
 | Cierre / revelación final (3 etapas) | Terminado | `tests/humo.test.js` |
 | Documentación | Al día con este archivo | — |
-| Guion web para la Dirección | Publicado 2026-09-22 | https://claude.ai/artifact/H9Cd8UmZeuzdizeh4BevY8 · copia en `docs/guion-web/` |
+| Guion web para la Dirección | Publicado 2026-09-22; **reemplazado** el 2026-09-26 por `docs/TEXTOS-DEL-JUEGO.md` (la copia local `docs/guion-web/` se retiró: sus textos ya no eran los del juego) | https://claude.ai/artifact/H9Cd8UmZeuzdizeh4BevY8 |
 
 ### Retroalimentación de la última prueba del usuario (2026-09-22)
 
@@ -74,6 +74,57 @@ G0, que despeja ese riesgo en cinco minutos y puede correrse ya.
 
 ---
 
+## 2.1 Segunda ronda de pedidos (2026-09-25)
+
+Pedidos del usuario tras revisar el proyecto completo. Las texturas y modelos
+los consigue el usuario **uno por uno, a pedido**: cada vez que se integra una,
+se analiza antes (orientación, cómo se ve, cómo quedaría en el juego).
+
+| # | Unidad | Estado |
+|---|---|---|
+| V1 | El Camino: se juegan **solo 2 tramos**, elegidos **solos** con la prioridad de El Mapa (los dos primeros equipos enviados a un lugar de la cadena del gas; si no hay dos, se completa con el orden de siempre) | **Hecho** · pruebas · falta Chrome |
+| V2 | El Camino: **animación de paso** entre tramos (velo dorado, barrido de luz, «Entrando a…») y el aire del 3D cambia de color poco a poco | **Hecho** · pruebas y captura · falta Chrome |
+| V3 | El Regreso: **pantalla partida** para dos jugadores (revisa D3) | **Hecho** · pruebas y captura · falta Chrome |
+| V4 | El Regreso: **la dificultad la pone El Camino**: +11 px de paso por hallazgo traído (tope +88). Más hallazgos = más fácil y más que entregar | **Hecho** · pruebas · falta Chrome |
+| V5 | El Regreso: **sin sobre**, solo la paloma | **Hecho** · captura · falta Chrome |
+| V6 | El Regreso: **animación de choque** (plumas, sacudida, destello rojo, paloma girando con estrellitas) | **Hecho** · captura · falta Chrome |
+| V7 | **Cinemáticas**: video opcional antes de las instrucciones de cada etapa (`assets/cinematicas/<etapa>.mp4`), agregado, no reemplazo | **Hecho** el hueco · faltan los videos |
+| V8 | El Mapa: **dibujo de isla estilo arcade** (`assets/mapa-territorio.jpg`, del usuario). Cada lugar va encima de su hito (faro, torre, represa, hornos…); la costa de `territorio.js` se calcó del dibujo (`herramientas/calcar-costa.py`). Relato, resultados, revelación y marcadores con la temática de los menús | **Hecho** · las 3 verificaciones del mapa en verde · falta Chrome |
+| V9 | El Camino: **pirámides estilo Egipto** | **Hecho** con textura de arenisca en bloques (`tex-piramide`) · falta Chrome |
+| V10 | El Camino: **personaje nuevo**, exploradora estilo muñeco de vinilo (cabeza grande, cola alta con trenza y aros dorados, camiseta turquesa —coral el J2—, short oliva, fundas, guantes, botas). Modelado por código en `camino3d/explorador.js`, animado (zancada, trenza que se mece, inclinación, tropiezo). Lleva una linterna encendida, no armas. Ahora mira hacia donde corre (antes corría de cara a la cámara). Vista previa: `herramientas/vista-personaje.html` | **Hecho** · captura · falta Chrome |
+| V11 | GUI general estilo menú de Tomb Raider (N64): título de fuego, fondo rojo oscuro, cajas con doble borde beige, aro decorativo. Hecho en portada (ahora es un menú), pausa, pantalla de conexión e instrucciones (`render.js`: `tituloMenu`, `cajaMenu`, `aroMenu`; `ui/menu.js`) | **En curso** · texturas de Tomb Raider integradas (lava en títulos, roca en fondos y cajas, medallón; ver ACTIVOS-VISUALES §7.1) · falta el HUD de las etapas. La cara del personaje se reserva para cuando exista el modelo |
+| V12 | **Esc pausa** (antes sacaba al inicio): Continuar, Reiniciar etapa, Pantalla completa, Música, Volver al inicio. En pantalla completa se bloquea Esc para el juego (mantener Esc sale). + / − en el Joy-Con también pausa | **Hecho** · pruebas y captura · falta Chrome |
+| V13 | Pantalla completa al entrar; letrero de tramo de 2,6 s sin muros; objetos que pasan de largo; WASD y flechas en todo el juego | **Hecho** · pruebas · falta Chrome |
+| V14 | El Camino en **dos zonas que no se mezclan**, por orden: 1ª zona pueblo (casas y palmeras, más espaciadas), 2ª zona desierto (pirámides, volcanes, rocas, dunas y arena a los lados). Se mantienen las ilustraciones de fondo de cada tramo, las tuberías, los pórticos y los bordillos. El muro con el que se choca cae al suelo | **Hecho** · pruebas y captura · falta Chrome |
+| V15 | **Cambios de nivel con la paleta de los menús**: pantalla del recorrido (roca, título de fuego, paradas con doble anillo, sello ✓ dorado), letrero «Entrando a…», cuenta 3-2-1 de fuego y fundido rojo oscuro | **Hecho** · captura · falta Chrome |
+| V16 | **Letra más grande y legible**: instrucciones con escala automática (crece con la pantalla y se achica si no cabe); marcadores, tablero y revelación de El Camino y El Regreso con la temática (revelación compartida en `ui/revelacion.js`) | **Hecho** · captura · falta Chrome |
+| V17 | **El Mapa, lugares más fáciles de encontrar** sin mover nada: balizas doradas que laten a través de la oscuridad (salvo La Isla Brillante, a propósito), linterna 105→120 px, descubrir al tocar (no al centrar) y en 0,5 s, etiquetas grandes sobre placa oscura | **Hecho** · captura · falta Chrome |
+| V18 | **El Regreso con texturas y tuberías con sentido**: tubería madre arriba de la que bajan los bajantes (unión en T), tubos que salen del suelo con base de concreto y válvula, cielo de atardecer con pirámides, volcán y pueblo en silueta, suelo de arenisca y roca. La paloma, igual | **Hecho** · captura · falta Chrome |
+| V19 | **El Regreso sin límite de entregas y más fácil**: se quitan los «sobres» (ya no se vuela sin nada que entregar); cada aro suma hasta el final. Lo traído de El Camino abre el paso (+13 px por hallazgo) y multiplica el valor de cada entrega (+12,5 %, hasta x2). Tuberías más fáciles para todos: paso 200→230, columnas 270→300 px, saltos 150→120, aros 55→70 % y más grandes. Chocar solo cuesta tiempo. Gana quien hace más puntos | **Hecho** · pruebas · falta Chrome |
+| V20 | **Cierre final** (las 3 páginas, con «El recorrido completo») con la temática y letra grande | **Hecho** · captura · falta Chrome |
+| V21 | **Templos en vez de casas** en la 1ª zona de El Camino (escalonado con santuario, de columnas con frontón, y ruinas), con las texturas de arenisca, bloques y tallado; la entrada mira al camino. Siluetas de templos también en el fondo de El Regreso. **La linterna alumbra el suelo de enfrente** (brazo a ~35° hacia abajo y un charco de luz en el camino) | **Hecho** · captura · falta Chrome |
+| V22 | **Portada nueva**: la exploradora del usuario a la derecha (`assets/menu-exploradora.png`, sobre pedestal con resplandor), subtítulo, premisa más legible, y menú con encabezado y botones de piedra (el elegido se enciende en fuego con flechas); la pausa usa los mismos botones. Se quita el templo escalonado de El Camino (quedan columnas, ruinas y palmeras). **Ojo:** el subtítulo «Una expedición por las tierras de auditoría» nombra el oficio antes de jugar, contra la regla de oro; decisión del usuario tras el aviso (constante `SUBTITULO` en `intro.js`) | **Hecho** · captura · falta Chrome |
+| V23 | **Dos jugadores con teclado**: J1 con WASD (+Espacio), J2 con las flechas (se une con ↑ en las instrucciones); cualquiera puede ser Joy-Con. Jugando solo, las flechas siguen moviendo al J1 (`ui/jugadores.js`) | **Hecho** · pruebas · falta Chrome |
+| V24 | **Recuento final** (`escenas/recuento.js`, `datos/puntajes.js`): puntos por etapa que suben con sonido, total, frase de cómo le fue a cada uno y ganador; **nombre con letras de arcade** (Joy-Con o teclado); **tabla de mejores** guardada en el equipo (localStorage) y opción «Mejores puntajes» en el menú | **Hecho** · pruebas y captura · falta Chrome |
+| V25 | **Rendimiento** sin quitar nada: fondo de menús y viñeta precalculados, cielo de El Regreso precalculado, resolución adaptable del 3D (baja hasta 0,75 si hay menos de 50 fps y vuelve a subir), entorno 3D más allá de la niebla sin dibujar | **Hecho** · falta medir en Chrome |
+| V26 | Horizontes de El Camino por zona (`fondo-templos`, `fondo-desierto`): el juego ya los usa si existen | Terminado · imágenes del usuario (2508×627) pasadas a JPG 2048×512 |
+| V27 | **Cuántos juegan y nombres al empezar** (`escenas/jugadores.js`, `ui/nombre.js`): menú «1 jugador / 2 jugadores» y nombre de cada uno con letras de arcade antes de salir; lo elegido vale para El Camino y El Regreso sin volver a preguntar (y quien se une en El Camino sigue en El Regreso); los nombres salen en los marcadores, tableros y recuento, que ya no los pide al final | **Hecho** · pruebas y captura |
+| V28 | **El Camino nunca cae a la vista 2D por lentitud**: el usuario la vio como «el juego se rompió» (puntos sobre negro, sin personaje). Ahora el 3D baja resolución hasta 0,5 y, si pierde la tarjeta gráfica o falla muchos fotogramas seguidos, se vuelve a crear solo | **Hecho** · falta confirmar en Chrome |
+| V29 | **El Regreso más liviano**: degradado de los tubos pintado una vez y estirado (antes ~30 degradados por fotograma), siluetas lejanas en lienzos aparte que solo se copian (y de paso ya no saltan al dar la vuelta) | **Hecho** · falta medir en Chrome |
+| V30 | **El Regreso a 60 fps** (medido en la AMD Radeon del equipo con `herramientas/medir-escena.html`: de ~100 ms a ~17 ms por fotograma). La causa: `cajaMenu` rellenaba con textura escalada cada fotograma, y en esa tarjeta, mezclado con el resto, costaba decenas de ms. Ahora cada caja se pinta una vez por tamaño y se copia (sirve a todo el juego: la portada bajó de 50 a 19 ms). Además: capas del cielo solo en su franja, nubes y suelo precalculados, bridas/aros/válvulas/carteles como piezas guardadas, grano dentro del cielo, resolución 1:1 en esa etapa | **Hecho** · medido en Chrome con ventana |
+| V31 | Portada: subtítulo en dos líneas, «Una expedición por las tierras de» grande con contorno y **AUDITORÍA** con la letra de fuego del título | **Hecho** · captura |
+| V32 | **Cinemáticas**: huecos nuevos `inicio` (tras los nombres) y `final` (antes del recuento), la música se baja mientras suena un video; **nivel 3 con historia nueva** («El camino despejado»: lo encontrado sirve para corregir y deja el regreso más fácil) en instrucciones, marcador, tablero y revelación; prompts en docs/CINEMATICAS.md y referencias en assets/originales/referencias-cine/ | **Hecho** el código · videos: el usuario los genera uno a uno (va el de inicio) |
+| V33 | **Los cinco videos puestos** (`assets/cinematicas/`, 10 s cada uno, de Gemini); **música**: el tema de Tomb Raider (1996) en `assets/musica/tema.mp3`, en bucle en todo el juego, volumen 0,32 bajo los efectos, se aparta durante los videos; si falta, vuelve la música generada (OJO: derechos de autor, decisión del usuario como con las texturas); **AUDITORÍA** en la portada con acabado de arenisca dorada tallada (`tituloMenu(..., 'piedra')`), distinto del fuego del título; **pantallas de lectura más grandes**: resultados, «Tu plan» y «Así elegimos» del nivel 1 se escalan según su contenido; revelaciones y tableros de los niveles 2 y 3 con letra mayor; títulos nítidos al escalar | **Hecho** · capturas en 1536×864 y 1280×720 |
+| V34 | **Power BI en El Camino**: el cartel ✓ pasa a ser un portátil con un tablero de Power BI (imagen del usuario, `assets/obj-powerbi.png`), siempre en los carriles laterales; al tomarlo analiza sin gastar datos. Textos de instrucciones, avisos, tablero y «Así trabajamos» actualizados. **Destellos al recoger** (chispas y anillo del color de lo recogido, pegados al jugador) y «+1 ◆ / +10 · Power BI / +100» que suben desde el explorador. **docs/TEXTOS-DEL-JUEGO.md**: todos los textos del juego con código por línea, para que el usuario los revise | **Hecho** · pruebas y capturas · textos: esperando la revisión del usuario |
+| V35 | **Orden para subir al repositorio** (rama `mejoras-stand`): imágenes sin uso retiradas con sus originales (fachadas, cartel ✓, guías del explorador, objetos 2D, relieve, paneles, mapa realista), `docs/guion-web` retirada (la reemplaza TEXTOS-DEL-JUEGO.md), README con el recorrido, controles, atajos, videos, música y estructura al día, OPERACION-STAND con uno o dos jugadores y cómo vaciar la tabla; **tabla de puntajes limpia** (clave nueva `ti.mejores.v2`, la vieja se borra sola) y botón **«Borrar tabla de puntajes»** en el panel de mandos (J) | **Hecho** · 18 pantallas cargadas sin errores, todos los archivos presentes, pruebas en verde · falta la prueba del usuario y el commit |
+| V36 | **Revisión de compatibilidad con Joy-Con** de todo lo nuevo: en «cuántos juegan / nombres», + y − vuelven atrás (antes abrían la pausa); los menús se manejan también con X/B/A del Joy-Con derecho (antes solo stick); en el recuento, un solo Joy-Con puede escribir el nombre del jugador sin mando. Nuevas pruebas `tests/joycon-flujo.test.js` (10): todo el recorrido nuevo solo con Joy-Con L y R, dos mandos en El Camino y El Regreso, pausa, recuento y saltar videos | **Hecho** · 156 pruebas, 148 pasan |
+| V37 | **Vinculación estilo Switch**: tras «Un jugador / Dos jugadores», pantalla «Vincula los mandos»: cada jugador mantiene gatillo + hombro (ZL + L o ZR + R) de SU Joy-Con; el primero es el Jugador 1; vibra y enciende sus luces con su número. **Un Joy-Con por jugador, de cualquier lado** (se descartó la idea de «izquierdo para uno, derecho para otro»: el usuario aclaró que no era eso). Varios Joy-Con conectados en reserva; el gestor emite `registro` al detectar el gesto. Teclado de respaldo (Espacio / ↑). Cada uno escribe su nombre solo con su mando | **Hecho** · 161 pruebas, 153 pasan · **falta confirmar con los Joy-Con reales** que el gesto se detecta en los mandos de reserva |
+| V38 | **Permisos de los Joy-Con, uno por uno**: la ventana de Chrome no salía (se pedía tras esperas y en pantalla completa: Chrome la cancela). Ahora se pide al instante del clic. La pantalla de conexión muestra la lista de mandos y «＋ Conectar otro Joy-Con» (Chrome deja elegir uno por vez y los recuerda), y «Empezar» cuando están todos. En «Vincula los mandos», botón clicable «＋ Conectar otro Joy-Con»; el panel J sale de pantalla completa antes de pedir el permiso | **Hecho** · 162 pruebas, 154 pasan · confirmado por el usuario que la ventana ya aparece |
+| V39 | **Calibrar mandos** desde el menú: Controles → «Calibrar mandos» (`escenas/calibrar.js`): una barra de avance por Joy-Con en juego, aviso si se movió y reintento, y prueba de la linterna con el punto de cada jugador. Botón adicional en la **pausa** (calibra sin salir de la etapa) y en el **panel J**. `JoyCon.progresoCalibracion` para la barra | **Hecho** · 165 pruebas, 157 pasan |
+| V40 | **Calibrar un mando con drift**: la calibración exigía que el giro marcara < 6 °/s estando quieto, y un Joy-Con con mucho desvío se quedaba para siempre en «esperando que esté quieto». Ahora basta con que esté apoyado (acelerómetro quieto, giro sin sacudidas; `CALIBRACION` en joycon.js), y la quietud del día a día mira el giro ya corregido. La calibración también vuelve a medir el centro del stick (drift del stick) | **Hecho** · prueba nueva con un mando de 14 °/s de desvío · falta confirmar con el Joy-Con del usuario |
+
+---
+
 ## 3. Decisión pendiente (2026-09-25)
 
 **D4 · Qué imágenes del usuario se usan en el juego.** De las 19 que generó,
@@ -92,10 +143,12 @@ motivos y las opciones:
 | `obj-lente` | Descuido: cabe tal cual en el marcador de ANALIZAR | Ponerla |
 | `tex-muro-paneles` | Se prefirieron las fachadas para las casas | Usarla en muros laterales de algún tramo |
 
-**Propuesta a la espera de respuesta:** poner `obj-lente`, usar
+**Actualización 2026-09-26:** las imágenes sin uso (las dos guías del explorador, `obj-dato`, `obj-oculto`, `obj-lente`, `tex-muro-paneles`) y las que dejaron de usarse (las tres fachadas, al cambiar las casas por templos, y `obj-control`, al cambiar el cartel ✓ por Power BI) **se retiraron del repositorio** junto con sus originales. Siguen en el historial de git.
+
+~~**Propuesta a la espera de respuesta:** poner `obj-lente`, usar
 `tex-muro-paneles`, mostrar al explorador en las instrucciones, probar la
 versión con `obj-dato`/`obj-oculto` para comparar, y dejar el personaje
-animado como está.
+animado como está.~~
 
 ---
 
@@ -345,10 +398,10 @@ aprobada.
 
 ```bash
 cd terra-incognita
-node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js
+node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js
 ```
 
-Resultado esperado hoy: `# tests 124 · # pass 116 · # fail 0 · # skipped 8`
+Resultado esperado hoy: `# tests 166 · # pass 158 · # fail 0 · # skipped 8`
 (los 8 omitidos son pruebas de dirección sobre grabaciones antiguas, v1, que
 no las permiten; es lo esperado). En Windows hay que nombrar los archivos:
 `node --test tests/` no funciona. Cada unidad nueva añade sus archivos de
@@ -388,5 +441,10 @@ distingue.
 | 2026-09-25 | La Etapa 1 recupera su revelación propia («Así elegimos» → Plan Anual), que se había perdido al pasar de seis etapas a tres |
 | 2026-09-25 | La revelación de la Etapa 1 se hace más honda: primero lo que hizo, después la traducción, al final el nombre |
 | 2026-09-25 | Repositorio privado en GitHub: arturcast/terra-incognita |
+| 2026-09-25 | **D3 revisada:** El Regreso pasa a pantalla partida (antes, mismo cielo). Mismas columnas para los dos |
+| 2026-09-25 | El Camino se acorta a 2 tramos, elegidos con la prioridad de El Mapa: la Etapa 1 decide la Etapa 2 |
+| 2026-09-25 | Lo encontrado en El Camino pone la dificultad de El Regreso: la Etapa 2 decide la Etapa 3 |
+| 2026-09-25 | Cinemáticas como agregado antes de las instrucciones; el texto de instrucciones se conserva |
+| 2026-09-25 | El usuario pone «auditoría» en el subtítulo de la portada, sabiendo que adelanta la revelación |
 | 2026-09-22 | Construidas la ruta de etapas (U2) y la Etapa 3, El Regreso (U3) |
 | 2026-09-22 | Construidas la ruta de etapas (U2) y la Etapa 3, El Regreso (U3) |

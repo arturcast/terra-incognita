@@ -315,6 +315,27 @@ test('la calibración rechaza muestras en movimiento y acepta las quietas', () =
   assert.ok(Math.abs(jc.estado.sesgo.x - 1.1) < 0.1);
 });
 
+test('un mando con mucho desvío (drift) y un sensor ruidoso SÍ se calibra quieto sobre la mesa', () => {
+  // Antes se exigía que el giro marcara < 6 °/s estando quieto: con este mando
+  // se quedaba para siempre en «esperando que esté quieto».
+  const jc = nuevoMando();
+  let calibrado = false;
+  jc.addEventListener('calibrado', () => { calibrado = true; });
+  const mover = fisica({ sesgo: { x: 3, y: -8, z: 14 }, ruido: 1.4, semilla: 21 });
+  jc.calibrar();
+  simular({ jc, segundos: 3, fps: 60, alReporte: () => mover(), alFotograma: () => {} });
+  assert.equal(calibrado, true, 'no se calibró estando quieto');
+  assert.ok(Math.abs(jc.estado.sesgo.z - 14) < 0.5 && Math.abs(jc.estado.sesgo.y + 8) < 0.5);
+  // Y un mando con mucho desvío pero ruido normal, ya calibrado, se sigue
+  // dando por quieto: así se le sigue corrigiendo la deriva por temperatura.
+  const jc2 = nuevoMando();
+  const quieto2 = fisica({ sesgo: { x: 3, y: -8, z: 14 }, semilla: 22 });
+  jc2.calibrar();
+  simular({ jc: jc2, segundos: 3, fps: 60, alReporte: () => quieto2(), alFotograma: () => {} });
+  assert.equal(jc2.sesgoFiable, true);
+  assert.equal(jc2.estado.quieto, true);
+});
+
 test('si nunca queda quieto, la calibración se rinde sin romper nada', () => {
   const jc = nuevoMando();
   let incompleta = false;

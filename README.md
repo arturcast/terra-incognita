@@ -1,6 +1,6 @@
 # TERRA INCÓGNITA
 
-**Una expedición al interior de la compañía.**
+**Una expedición por las tierras de auditoría.**
 
 Experiencia interactiva con Joy-Con de Nintendo Switch para el stand de
 **Auditoría Interna** en el *Tour Conéctate* de Gases del Caribe.
@@ -49,37 +49,34 @@ eso. Ahora dice "linterna" y "lugar".
 |---|---|---|---|---|
 | 1 · El Mapa | linterna con el giroscopio | 1 | Plan Anual de Auditoría | **Jugable** |
 | 2 · El Camino | estilo *Subway Surfers*, en 3D | 1 o 2 | Ejecución con analítica de datos | **Jugable** |
-| 3 · El Regreso | estilo *Flappy Bird* | 1 o 2 | Informe, recomendaciones y seguimiento | **Jugable** |
+| 3 · El Regreso | estilo *Flappy Bird* | 1 o 2 | Recomendaciones y seguimiento | **Jugable** |
 
-La Dirección de Auditoría aprobó el demo de la Etapa 1 el 21 de septiembre de
-2026. El recorrido se condensó entonces de seis etapas a tres.
+El recorrido completo: **portada → cuántos juegan y sus nombres → video de
+inicio → El Mapa → El Camino → El Regreso → video final → recuento de puntos y
+tabla de los mejores → cierre.** Cada etapa tiene su video, sus instrucciones,
+su tablero y su pantalla de revelación («Así elegimos / trabajamos / terminamos»).
 
-**La Etapa 2, El Camino**, recorre la cadena del gas de punta a punta (El
-Manantial → Los Ramales → La Montaña Perdida → El Gran Caudal → La Represa).
-Se recogen **datos crudos**, con el gatillo se **analizan** y aparece lo que
-estaba escondido; los carteles «✓ Todo en orden» suman poco y las excusas son
-muros. Cierra con un tablero por estación y la revelación: sacamos la
-información directo de la fuente, la analizamos con Power BI, recorremos el
-proceso completo, y lo escondido se llama **hallazgo**. Dos jugadores corren el
-mismo camino a pantalla partida.
+**La Etapa 1, El Mapa**, tiene dos partes: **explorar** el mapa a oscuras con la
+linterna (60 s) y **decidir** a dónde mandar cinco equipos entre catorce
+lugares. Cada lugar es un guiño al proceso que representa (*El Gran Caudal* era
+facturación, *La Montaña Perdida* pérdida no operacional…). **Uno de los catorce
+está fuera del mapa**: *La Isla Brillante*, es decir Brilla, el negocio que no
+es gas.
 
-La Etapa 1 tiene dos partes, cada una con su pantalla de instrucciones:
-**explorar** el mapa a oscuras con la linterna (60 s) y **decidir** a dónde
-mandar cinco equipos entre catorce lugares (45 s). Al apuntar a un lugar sale
-una ficha con lo que hay ahí. Cierra explicando qué se te escapó y por qué
-importaba.
+**La Etapa 2, El Camino**, recorre en 3D los dos tramos de la cadena del gas a
+los que el visitante dio más prioridad en El Mapa. Se recogen **datos crudos**
+(◆ azules), con el gatillo se **analizan** y aparece lo que estaba escondido;
+los **tableros de Power BI** analizan solos, y las excusas son muros. Dos
+jugadores corren el mismo camino a pantalla partida.
 
-Cada lugar es un guiño al proceso que representa, y la gracia está en el
-cierre: *El Gran Caudal* era facturación, *La Montaña Perdida* era pérdida no
-operacional, *Los Grandes Hornos* era Gran Industria. La tabla completa está en
-[`docs/NARRATIVA.md`](docs/NARRATIVA.md).
+**La Etapa 3, El Regreso** («el camino despejado»), cuenta que lo encontrado
+sirve para corregir y deja el camino más fácil: **mientras más cosas escondidas
+atrapó cada jugador en El Camino, más ancho es su paso entre las tuberías y más
+vale cada aro.**
 
-**Uno de los catorce está fuera del mapa** y casi nadie lo encuentra: *La Isla
-Brillante*, es decir Brilla, el negocio que no es gas. Lo que una compañía no
-mira porque "no es lo nuestro" suele ser lo que menos control tiene — y ese
-mensaje aparece al final aunque el visitante nunca llegue hasta allá.
-
-El diseño de las tres etapas está en [`docs/DISENO-JUEGO.md`](docs/DISENO-JUEGO.md).
+Todos los textos del juego, con un código por línea para pedir cambios, están
+en [`docs/TEXTOS-DEL-JUEGO.md`](docs/TEXTOS-DEL-JUEGO.md). El diseño de las
+etapas, en [`docs/DISENO-JUEGO.md`](docs/DISENO-JUEGO.md).
 
 ---
 
@@ -100,36 +97,59 @@ librería, Three.js, viene copiada dentro del proyecto.
    (mantén pulsado el botón de sincronización del lateral hasta que parpadeen
    las luces, y búscalo en *Configuración → Bluetooth*).
 2. Doble clic en **`abrir.cmd`**.
-3. Se abre Chrome. Pulsa **Conectar Joy-Con** y elígelo en la lista.
+3. Se abre Chrome. Pulsa **«＋ Conectar un Joy-Con»** y elígelo en la ventana de
+   Chrome; repite con **«＋ Conectar otro Joy-Con»** por cada mando (Chrome deja
+   elegir uno por vez y los recuerda: la próxima vez aparecen solos). Luego
+   **«Empezar»**.
 4. Para salir, cierra la ventana negra del servidor.
 
 > **Importante:** no abras `index.html` haciendo doble clic sobre el archivo.
 > WebHID solo funciona en un contexto seguro y `file://` no lo es. Por eso
 > existe `abrir.cmd`, que sirve la página desde `localhost`.
 
-Si el Joy-Con falla en pleno evento, el botón **Continuar con ratón** deja la
-experiencia jugable. Es una red de seguridad deliberada, no un descuido.
+Si el Joy-Con falla en pleno evento, el botón **Continuar con ratón o
+teclado** deja la experiencia jugable. Es una red de seguridad deliberada.
 
-### Atajos
+### Controles
+
+- **Joy-Con:** moverlo apunta; **ZR/ZL** es la acción; **+ / −** pausa;
+  **HOME/CAPTURA** recentra la mira.
+- **Teclado, Jugador 1:** **W A S D** para moverse, **W o Espacio** para la acción.
+- **Teclado, Jugador 2:** flechas **← →** para moverse, **↑** para la acción.
+- **Un Joy-Con por jugador**, de cualquier lado. Al empezar se elige «Un
+  jugador» o «Dos jugadores» y se **vinculan los mandos** en una pantalla
+  estilo Switch: cada uno mantiene pulsados **el gatillo y el botón de hombro**
+  de su Joy-Con (ZL + L o ZR + R); el primero es el Jugador 1. El mando vibra
+  y enciende sus luces con su número. Sin Joy-Con: Espacio el Jugador 1, ↑ el
+  Jugador 2. Todo el juego se maneja con un solo Joy-Con por persona.
+- **Varios Joy-Con a la vez:** todos los autorizados quedan conectados en
+  reserva; el operador agrega uno nuevo con la tecla J → «Sincronizar un mando
+  nuevo».
+
+### Atajos del operador
 
 | Tecla | Acción |
 |---|---|
 | `F` | Pantalla completa |
-| `F9` | Panel de mandos del operador: asignar Jugador 1 y Jugador 2 |
+| `J` | Panel de mandos: asignar Jugador 1 y 2, sincronizar mandos, **borrar la tabla de puntajes** (también `F9`, pero en portátiles esa tecla suele ser volumen o brillo) |
 | `P` | Sala de prueba de dos jugadores |
 | `1` / `2` / `3` | Saltar a una etapa (para ensayar) |
 | `0` | Ver la pantalla del recorrido |
 | `M` | Silenciar la música |
-| `C` | Calibrar el giroscopio (deja el mando quieto un segundo) |
+| `C` | Calibrar el giroscopio (deja el mando quieto un segundo). También: menú principal → Controles → **Calibrar mandos** (con barra de avance y prueba de la linterna), **Pausa → Calibrar mandos** en plena partida, y el panel J |
 | `R` | Recentrar el puntero |
-| `Esc` | Volver al inicio |
+| `Esc` | Pausa (desde ahí: reiniciar la etapa o volver al inicio) |
 
-La música y los sonidos se generan con Web Audio en el momento: no hay
-archivos de audio que descargar ni que puedan faltar.
+### Videos, música y puntajes
 
-En el mando: **ZR/ZL** confirma, **HOME/CAPTURA** recentra la mira. En las
-instrucciones de El Camino, **el Jugador 2 se une pulsando cualquier botón**
-del otro Joy-Con.
+- **Videos** (cinemáticas): `assets/cinematicas/` — `inicio`, `mapa`, `camino`,
+  `regreso` y `final` (.mp4). Si falta uno, el juego sigue sin él. Cómo se
+  hicieron y cómo rehacerlos: [`docs/CINEMATICAS.md`](docs/CINEMATICAS.md).
+- **Música:** `assets/musica/tema.mp3`, en bucle; se aparta mientras suena un
+  video. Si falta, suena una música generada en el momento. Los efectos de
+  sonido siempre se generan con Web Audio.
+- **Tabla de los mejores:** se guarda en el propio navegador del equipo del
+  stand (no necesita internet). Se vacía desde el panel de mandos (tecla J).
 
 ---
 
@@ -138,93 +158,84 @@ del otro Joy-Con.
 ```
 terra-incognita/
 ├── index.html              página y capa de enlace del mando
-├── abrir.cmd               lanzador del stand
+├── abrir.cmd / abrir.sh    lanzadores del stand (sirven la página en localhost:8740)
+├── servidor.py             servidor local sin caché
 ├── package.json            solo declara módulos ES; sin dependencias
 ├── src/
-│   ├── main.js             punto de entrada: enlaza mando y arranca el motor
+│   ├── main.js             punto de entrada: mandos, motor, escenas, teclado
 │   ├── core/
 │   │   ├── joycon.js       driver WebHID: protocolo, IMU, vibración
 │   │   ├── input.js        puntero por giroscopio y acciones con nombre
-│   │   ├── engine.js       bucle, lienzo y máquina de escenas
-│   │   ├── render.js       paleta, tipografía y ayudantes de dibujo
-│   │   ├── audio.js        música y efectos sintetizados, sin archivos
+│   │   ├── engine.js       bucle, lienzo, escenas, pantalla partida
+│   │   ├── render.js       paleta, letras de fuego/piedra, cajas, fondos (con caché)
+│   │   ├── audio.js        música (tema en mp3) y efectos sintetizados
+│   │   ├── cinematica.js   reproduce los videos entre pantallas
 │   │   ├── briefing.js     pantallas de instrucciones que se miden solas
 │   │   └── mandos.js       inventario, batería y cambio de mando en caliente
 │   ├── ui/
-│   │   └── panel-mandos.js panel del operador (F9)
+│   │   ├── menu.js         menús con estilo de consola (portada, pausa)
+│   │   ├── pausa.js        menú de pausa
+│   │   ├── jugadores.js    quién juega, nombres, aviso del Jugador 2
+│   │   ├── nombre.js       escribir el nombre con letras de arcade
+│   │   ├── revelacion.js   pantallas «Así trabajamos / terminamos»
+│   │   └── panel-mandos.js panel del operador (tecla J)
 │   ├── datos/
-│   │   └── territorio.js   los catorce lugares y la lógica de evaluación
-│   ├── juego/camino3d/     la vista 3D de El Camino (Three.js)
-│   │   ├── vista3d.js      render, cámaras y pantalla partida
-│   │   ├── escenario.js    camino, tuberías, casas, palmeras, horizonte
-│   │   ├── objetos.js      datos, carteles, muros, lo escondido, arcos
-│   │   └── explorador.js   el personaje y su animación
+│   │   ├── territorio.js   los catorce lugares y la evaluación de El Mapa
+│   │   └── puntajes.js     recuento final y tabla de los mejores
 │   └── juego/
 │       ├── carrera.js      lógica pura de El Camino: generador y reglas
 │       ├── vuelo.js        lógica pura de El Regreso: física y cielo
+│       ├── camino3d/       la vista 3D de El Camino (Three.js)
+│       │   ├── vista3d.js      render, cámaras, pantalla partida, destellos
+│       │   ├── escenario.js    camino, templos, desierto, horizonte por zona
+│       │   ├── objetos.js      datos, Power BI, muros, lo escondido, arcos
+│       │   └── explorador.js   la exploradora y su animación
 │       └── escenas/
-│           ├── intro.js        apertura
+│           ├── intro.js        portada y menú principal
+│           ├── jugadores.js    cuántos juegan, vincular los mandos y nombres
+│           ├── calibrar.js     calibrar los Joy-Con y probar la linterna
+│           ├── ruta.js         la pantalla entre etapa y etapa
 │           ├── mapa.js         ETAPA 1 — El Mapa
 │           ├── camino.js       ETAPA 2 — El Camino (1 o 2 jugadores)
 │           ├── regreso.js      ETAPA 3 — El Regreso (1 o 2 jugadores)
-│           ├── ruta.js         la pantalla entre etapa y etapa
-│           ├── cierre.js       la revelación y el recorrido completo
+│           ├── recuento.js     puntos de cada uno y tabla de los mejores
+│           ├── cierre.js       la revelación final y el recorrido completo
 │           └── prueba2j.js     sala de prueba de dos jugadores (tecla P)
 ├── vendor/
 │   └── three.module.min.js la única librería: Three.js r161, copiada, con su licencia
 ├── assets/                 imágenes del juego, ya procesadas
-│   └── originales/         las que salen de la IA, sin tocar
+│   ├── cinematicas/        los cinco videos (.mp4)
+│   ├── musica/             el tema musical (.mp3)
+│   └── originales/         las imágenes tal como salieron (IA, texturas, referencias de los videos)
 ├── herramientas/
-│   ├── prueba-webgl.html   ¿puede este equipo con 3D? (fase G0)
-│   ├── procesar-imagenes.py deja las imágenes listas para el juego
 │   ├── vista-escena.html   ver una pantalla suelta, sin jugar hasta ella
+│   ├── vista-personaje.html la exploradora 3D en tres vistas
+│   ├── medir-escena.html   cuánto tarda cada fotograma (rendimiento)
+│   ├── prueba-webgl.html   ¿puede este equipo con 3D?
+│   ├── procesar-imagenes.py deja las imágenes de IA listas para el juego
+│   ├── recortar-texturas.py saca las texturas de piedra y lava de las láminas
+│   ├── calcar-costa.py     calca la costa del mapa de la imagen
 │   └── joycon-lab/         banco de pruebas del mando, aparte del juego
-├── assets/
-│   └── originales/         imágenes generadas con IA, sin procesar
-├── tests/
-│   ├── entrada.test.js     estabilidad del mando, simulado
-│   ├── captura.test.js     lo mismo con grabaciones del mando real
-│   ├── multijugador.test.js ranuras, pantalla partida, independencia
-│   ├── camino.test.js      equilibrio y justicia de El Camino
-│   ├── regreso.test.js     equilibrio y justicia de El Regreso
-│   ├── camino3d.test.js    la escena 3D, construida y corrida sin navegador
-│   ├── humo.test.js        juega las escenas enteras sobre un lienzo falso
-│   ├── captura.py          graba el mando (grabar-mando.cmd lo lanza)
-│   └── capturas/           las grabaciones
+├── tests/                  pruebas (node --test), ver AGENTS.md §6
 └── docs/
     ├── ARRANQUE-EN-OTRO-EQUIPO.md  cómo ponerlo a andar en otra máquina
-    ├── PLAN-DE-TRABAJO.md  ← EMPIEZA AQUÍ: estado, qué sigue, decisiones pendientes
-    ├── PLAN-GRAFICO-CAMINO.md  El Camino en 3D: solución, arquitectura, fases
+    ├── PLAN-DE-TRABAJO.md  estado, qué se hizo y qué sigue
+    ├── TEXTOS-DEL-JUEGO.md todos los textos del juego, con código por línea
+    ├── CINEMATICAS.md      los cinco videos: historia y prompts
     ├── ACTIVOS-VISUALES.md imágenes con IA: catálogo y prompts
-    ├── ARQUITECTURA.md     decisiones técnicas y por qué
     ├── NARRATIVA.md        biblia de tono; qué se puede y no se puede decir
     ├── DISENO-JUEGO.md     las tres etapas, mecánica por mecánica
+    ├── PLAN-GRAFICO-CAMINO.md  El Camino en 3D: solución y arquitectura
+    ├── ARQUITECTURA.md     decisiones técnicas y por qué
     ├── PROTOCOLO-JOYCON.md referencia del protocolo HID del Joy-Con
     ├── MODULO-MANDOS.md    gestor de mandos: diseño y verificación
-    ├── MULTIJUGADOR.md     dos Joy-Con compitiendo: cómo está hecho
+    ├── MULTIJUGADOR.md     dos jugadores: cómo está hecho
     ├── ESTABILIDAD.md      por qué fallaba el mando tras la demo y cómo se prueba
     └── OPERACION-STAND.md  guion y checklist para el día del evento
 ```
 
-## Lo siguiente
-
-El **gestor de mandos** ya está: cambio en caliente sin recargar, vigilancia de
-batería con avisos que nunca interrumpen una partida, y diagnóstico con F9.
-Ver [`docs/MODULO-MANDOS.md`](docs/MODULO-MANDOS.md).
-
-El **modo de dos jugadores** también: dos Joy-Con a la vez, pantalla partida y
-cambio en caliente por jugador, medido con los mandos reales. Ver
-[`docs/MULTIJUGADOR.md`](docs/MULTIJUGADOR.md).
-
-**La Etapa 2, El Camino**, está jugable con uno o dos jugadores, probada por
-el usuario en Chrome con dos Joy-Con.
-
-**Lo que sigue, en orden, está en
-[`docs/PLAN-DE-TRABAJO.md`](docs/PLAN-DE-TRABAJO.md):** la ruta de etapas entre
-etapa y etapa, **El Regreso** (*Flappy Bird* de dos jugadores: los hallazgos
-se llevan de vuelta y se verifica que cambiaron) y **El Camino en 3D** con
-Three.js ([`docs/PLAN-GRAFICO-CAMINO.md`](docs/PLAN-GRAFICO-CAMINO.md)), con
-imágenes generadas con IA ([`docs/ACTIVOS-VISUALES.md`](docs/ACTIVOS-VISUALES.md)).
+Lo que sigue y el historial de cambios están en
+[`docs/PLAN-DE-TRABAJO.md`](docs/PLAN-DE-TRABAJO.md).
 
 ---
 

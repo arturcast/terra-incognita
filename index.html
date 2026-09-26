@@ -24,17 +24,50 @@
   #lienzo{position:relative;display:block;width:100vw;height:100vh;z-index:1}
 
   /* ---------- capa de enlace ---------- */
+  /* Estilo de menú de consola, el mismo de render.js (fondoMenu, tituloMenu, cajaMenu). */
   #enlace{
     position:fixed; inset:0; z-index:10; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:22px; text-align:center;
-    background:radial-gradient(ellipse at center,#0a1018 0%,#05070c 70%); padding:40px;
+    background:
+      radial-gradient(ellipse at 55% 45%,rgba(74,17,9,.55) 0%,rgba(36,6,4,.78) 55%,rgba(11,2,2,.95) 100%),
+      url(assets/ui-roca-lava.png) 0 0/410px,
+      #240604;
+    padding:40px;
+    font-family:"Times New Roman",Georgia,serif;
   }
   #enlace.oculto{display:none}
   #enlace h1{
-    font:400 54px/1.1 Georgia,"Times New Roman",serif; margin:0; letter-spacing:1px;
+    font:bold 72px/1.05 "Times New Roman",Georgia,serif; margin:0; letter-spacing:3px;
+    /* degradado de fuego con la lava por debajo, solo dentro de las letras */
+    background:
+      linear-gradient(180deg,rgba(255,231,160,.85) 0%,rgba(246,169,44,.5) 30%,rgba(194,65,26,.45) 62%,rgba(78,12,4,.9) 100%),
+      url(assets/ui-lava.png) 0 0/95px;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-stroke:2px #1e0402; filter:drop-shadow(4px 5px 0 rgba(0,0,0,.75));
   }
-  #enlace .sub{font:italic 17px Georgia,serif; color:var(--oro); margin:-8px 0 6px}
-  #enlace p{max-width:560px; color:var(--tenue); margin:0; font-size:14px; line-height:1.75}
+  #enlace .sub{font:italic 19px "Times New Roman",Georgia,serif; color:#e8c872; margin:-8px 0 6px;
+    text-shadow:2px 2px 0 rgba(0,0,0,.85)}
+  #enlace p{max-width:560px; color:#e9dcb4; margin:0; font-size:16px; line-height:1.7;
+    text-shadow:2px 2px 0 rgba(0,0,0,.85);
+    background:linear-gradient(rgba(8,5,3,.72),rgba(8,5,3,.72)),url(assets/ui-roca-oscura.png) 0 0/307px;
+    border:2px solid #cdbb8a; outline:3px solid #150b05; padding:14px 20px}
+  #enlace .fila button{
+    font-family:"Times New Roman",Georgia,serif; font-size:19px; color:#e9dcb4; border-radius:0;
+    background:linear-gradient(rgba(8,5,3,.72),rgba(8,5,3,.72)),url(assets/ui-roca-oscura.png) 0 0/307px;
+    border:2px solid #cdbb8a; outline:3px solid #150b05;
+    text-shadow:2px 2px 0 rgba(0,0,0,.85);
+  }
+  #enlace .fila button:hover, #enlace .fila button:focus{color:#fff3cf; background:rgba(60,18,8,.75); border-color:#f0d98a}
+  #enlace .fila button.principal{background:rgba(60,18,8,.8); font-weight:bold}
+  #enlace .pista{color:#bfae82}
+  /* los Joy-Con ya conectados, como fichas */
+  #enlace .mandos{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:640px;
+    color:#e9dcb4; font:16px "Times New Roman",Georgia,serif; text-shadow:2px 2px 0 rgba(0,0,0,.85)}
+  #enlace .mandos .ficha{border:2px solid #7fe0c0; outline:3px solid #150b05; padding:6px 14px;
+    background:rgba(10,40,30,.8); color:#dffcf0; font-weight:bold}
+  #enlace .mandos .ficha.mal{border-color:#e0614a; background:rgba(60,14,8,.8); color:#ffd2c2}
+  #enlace .mandos .nota{flex-basis:100%; text-align:center; color:#d6c8a2; font-style:italic}
+  #enlace kbd{background:rgba(0,0,0,.4); border-color:#cdbb8a; color:#e9dcb4}
   .fila{display:flex; gap:12px; align-items:center; margin-top:8px}
   button{
     background:transparent; color:var(--tinta); border:1px solid var(--linea);
@@ -53,7 +86,15 @@
 
   .oculto{display:none !important}
 
-  /* ---------- panel del operador (F9) ---------- */
+  /* ---------- cinemáticas: video de cada etapa, antes de sus instrucciones ---------- */
+  #cinematica{position:fixed;inset:0;z-index:12;background:#000;display:flex;align-items:center;justify-content:center}
+  #cinematica video{width:100%;height:100%;object-fit:contain}
+  #cinematica .cin-saltar{
+    position:absolute;right:24px;bottom:20px;font:13px "Segoe UI",system-ui,sans-serif;
+    color:rgba(232,217,181,.7);background:rgba(5,7,12,.6);padding:6px 14px;border-radius:14px;
+  }
+
+  /* ---------- panel del operador (J o F9) ---------- */
   #panelMandos{
     position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
     background:rgba(3,5,9,.72); padding:28px; cursor:default;
@@ -154,25 +195,35 @@
 
 <div id="enlace">
   <h1>TERRA INCÓGNITA</h1>
-  <div class="sub">Una expedición al interior de la compañía</div>
+  <div class="sub">Una expedición por las tierras de auditoría</div>
   <p>
-    Conecta un Joy-Con para jugar con el movimiento. Se usa <b>uno solo</b>, sostenido
-    como una linterna. Si el mando falla, puedes recorrer la experiencia con el ratón.
+    Conecta los Joy-Con para jugar con el movimiento: <b>cada jugador usa uno</b>, de
+    cualquier lado, sostenido como una linterna. Dentro del juego, cada uno vincula el
+    suyo. Si un mando falla, se puede jugar con el teclado o el ratón.
   </p>
+  <div class="mandos" id="listaMandos"></div>
   <div class="fila">
-    <button id="btnEnlazar" class="principal">Conectar Joy-Con</button>
-    <button id="btnRaton">Continuar con ratón</button>
+    <button id="btnEnlazar">＋ Conectar un Joy-Con</button>
+    <button id="btnEmpezar" class="principal oculto">Empezar ▸</button>
+    <button id="btnRaton">Jugar con ratón o teclado</button>
   </div>
   <div class="aviso" id="aviso"></div>
   <div class="pista">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o flechas para jugar con teclado · <kbd>Espacio</kbd> acción<br>
     <kbd>F</kbd> pantalla completa · <kbd>M</kbd> silenciar música · <kbd>C</kbd> calibrar giro ·
-    <kbd>R</kbd> recentrar · <kbd>P</kbd> prueba de dos jugadores · <kbd>Esc</kbd> volver al inicio
+    <kbd>R</kbd> recentrar · <kbd>J</kbd> panel de mandos · <kbd>P</kbd> prueba de dos jugadores · <kbd>Esc</kbd> pausa
   </div>
 </div>
 
 <div id="estado" class="oculto"></div>
 
-<!-- Panel del operador. Se abre con F9 y el visitante no debería verlo nunca. -->
+<!-- Video de la etapa. Los archivos van en assets/cinematicas/; si falta uno, no se muestra. -->
+<div id="cinematica" class="oculto">
+  <video playsinline preload="auto"></video>
+  <div class="cin-saltar">Pulsa el gatillo para saltar</div>
+</div>
+
+<!-- Panel del operador. Se abre con la tecla J (o F9) y el visitante no debería verlo nunca. -->
 <div id="panelMandos" class="oculto"></div>
 <div id="bandaAviso" class="banda oculto"></div>
 

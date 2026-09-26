@@ -13,6 +13,8 @@
 
   Uso:  http://localhost:8740/herramientas/vista-escena.html?escena=ruta&t=2.9
         &completada=mapa     (solo para la ruta: qué etapa se acaba de terminar)
+        &transicion=0.5      (solo para El Camino: el paso entre tramos, de 1 a 0)
+        &pausa=1             (el menú de pausa encima de la escena)
 
   Desde un agente:
     chrome --headless=new --window-size=1600,900 --virtual-time-budget=4000 \
@@ -50,7 +52,12 @@ import { EscenaCamino } from '../src/juego/escenas/camino.js';
 import { EscenaPrueba2J } from '../src/juego/escenas/prueba2j.js';
 import { EscenaRegreso } from '../src/juego/escenas/regreso.js';
 import { EscenaMapa } from '../src/juego/escenas/mapa.js';
+import { EscenaRecuento } from '../src/juego/escenas/recuento.js';
+import { EscenaJugadores } from '../src/juego/escenas/jugadores.js';
+import { EscenaCalibrar } from '../src/juego/escenas/calibrar.js';
 import { evaluar, REGIONES } from '../src/datos/territorio.js';
+import { cargarTexturasMenu } from '../src/core/render.js';
+await cargarTexturasMenu();
 
 const q = new URLSearchParams(location.search);
 const nombre = q.get('escena') || 'ruta';
@@ -63,8 +70,11 @@ for (let i = 0; i < jugadores; i++) motor.jugadores[i].estado.conectado = true;
 ['mapa', 'camino', 'cierre'].forEach((n) => motor.escenas.set(n, {}));
 
 // Un progreso verosímil, para que las pantallas muestren números reales.
-motor.expedicion.puntajes.mapa = { elegidas: [{}, {}, {}, {}, {}], vision: 46, islaDescubierta: false };
-motor.expedicion.puntajes.camino = { resultados: [{ hallazgos: 9, existentes: 14 }], ganador: 0 };
+motor.expedicion.puntajes.mapa = { elegidas: [{}, {}, {}, {}, {}], vision: 46, total: 68, islaDescubierta: false };
+motor.expedicion.puntajes.camino = {
+  resultados: [{ hallazgos: 9, existentes: 14, puntos: 1180 }, { hallazgos: 6, existentes: 14, puntos: 870 }], ganador: 0,
+};
+motor.expedicion.puntajes.regreso = { resultados: [{ entregas: 21, puntos: 4020 }, { entregas: 18, puntos: 3310 }], ganador: 0 };
 
 const escenas = {
   ruta: () => new EscenaRuta(motor),
@@ -74,7 +84,15 @@ const escenas = {
   prueba2j: () => new EscenaPrueba2J(motor),
   regreso: () => new EscenaRegreso(motor),
   mapa: () => new EscenaMapa(motor),
+  recuento: () => new EscenaRecuento(motor),
+  jugadores: () => new EscenaJugadores(motor),
+  calibrar: () => new EscenaCalibrar(motor),
 };
+// Nombres puestos al empezar: &nombres=ANA,BETO (y con eso, cuántos juegan).
+if (q.get('nombres')) {
+  motor.expedicion.nombres = q.get('nombres').split(',');
+  motor.expedicion.jugadores = motor.expedicion.nombres.length;
+}
 const escena = (escenas[nombre] || escenas.ruta)();
 
 const datos = nombre === 'ruta'
@@ -82,6 +100,8 @@ const datos = nombre === 'ruta'
   : nombre === 'cierre' ? motor.expedicion.puntajes.mapa : null;
 
 await escena.entrar(datos);
+if (escena.cargaDibujo) await escena.cargaDibujo;   // El Mapa: esperar el dibujo del territorio
+if (escena.cargaImagen) await escena.cargaImagen;   // La portada: esperar a la exploradora
 
 // Para ver una fase concreta sin jugar la etapa entera: &fase=revelacion
 const fase = q.get('fase');
@@ -90,11 +110,24 @@ if (fase && nombre === 'mapa') {
   escena.resultado = evaluar(escena.elegidas, 0.42);
   escena.fase = fase;
   escena.tFase = 0;
-  escena.paginaRes = escena._ultimaPagina;
+  escena.paginaRes = q.get('pagina') ? parseInt(q.get('pagina'), 10) : escena._ultimaPagina;
+} else if (fase && nombre === 'jugadores') {
+  // &fase=vincular&cuantos=2&vinculos=joycon-izq,teclado  ·  &fase=nombre&cuantos=2
+  escena._empezarVinculo(parseInt(q.get('cuantos') || '1', 10));
+  (q.get('vinculos') || '').split(',').filter(Boolean).forEach((v, k) => {
+    escena.vinculos[k] = v === 'teclado'
+      ? { tipo: 'teclado', estado: 'listo', esquema: k === 0 ? 'W A S D' : 'flechas ← → ↑' }
+      : { tipo: 'joycon', id: 'x' + k, esIzquierdo: v.endsWith('izq'), estado: 'listo' };
+  });
+  if (fase === 'nombre') escena._empezarNombres();
 } else if (fase) {
   escena.fase = fase;
   escena.tFase = 0;
 }
+// El cierre en una página concreta (0, 1, 2): &pagina=2
+if (q.get('pagina') && nombre === 'cierre') escena.pagina = parseInt(q.get('pagina'), 10);
+// El Mapa con todos los lugares ya descubiertos: &descubrir=1
+if (q.get('descubrir')) REGIONES.forEach((r) => { r.descubierto = true; });
 // Se avanza a saltos de un fotograma: es como corre de verdad. Las pantallas
 // que esperan una pulsación (instrucciones, tablero) se pasan solas, salvo que
 // se pida auto=0: así `t` cuenta desde que arranca la escena.
@@ -106,7 +139,27 @@ for (let k = 0; k < Math.round(t * 60); k++) {
   }
   escena.actualizar(1 / 60);
 }
+// El Camino: ver el paso de un tramo al otro en un momento dado (0-1): &transicion=0.5
+if (q.get('transicion') && escena.transiciones) escena.transiciones[0] = parseFloat(q.get('transicion'));
+// El Camino: un destello de recogida congelado a medio camino: &destello=dato|control|hallazgo
+if (q.get('destello') && escena.vista3d && escena.carreras && escena.carreras[0]) {
+  const car = escena.carreras[0];
+  escena.vista3d.destellos.lanzar(0, q.get('destello'), (car.xCarril - 1) * 2.6);
+  escena.vista3d.destellos.actualizar(0.12);
+  escena._dt = 0;
+}
 escena.dibujar(motor.ctx);
+// El menú de pausa encima: &pausa=1
+if (q.get('pausa')) {
+  const { Pausa } = await import('../src/ui/pausa.js');
+  const pausa = new Pausa(motor);
+  motor.pausa = pausa;
+  motor.escena = escena;
+  motor.nombreEscena = nombre;
+  pausa.abrir();
+  for (let k = 0; k < 20; k++) pausa.actualizar(1 / 60);
+  pausa.dibujar(motor.ctx);
+}
 
 // La imagen, en pequeño, dentro de la página.
 const mini = document.createElement('canvas');

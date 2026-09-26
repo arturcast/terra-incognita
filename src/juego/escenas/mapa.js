@@ -19,8 +19,16 @@ import { Puntero, Acciones } from '../../core/input.js';
 import { Briefing, partirLineas } from '../../core/briefing.js';
 import {
   PALETA, FUENTE, rectRedondeado, anillo, barraLectura,
-  grano, vineta, suave, limitar,
+  grano, vineta, suave, limitar, cajaMenu, tituloMenu, fondoMenu,
 } from '../../core/render.js';
+
+/**
+ * El dibujo del territorio (una isla vista desde arriba, estilo arcade). Se
+ * pinta ocupando todo el lienzo, y las posiciones de los lugares y la costa de
+ * territorio.js están medidas sobre él: cada lugar cae encima de su dibujo (el
+ * faro, la represa, los hornos…). Si no carga, se dibuja la costa por código.
+ */
+const DIBUJO_MAPA = '/assets/mapa-territorio.jpg';
 import {
   REGIONES, LECTURAS, BANDERAS_DISPONIBLES,
   generarCosta, generarIsla, evaluar,
@@ -28,7 +36,14 @@ import {
 
 const T_EXPLORAR = 60;
 const T_DECIDIR = 60;
-const RADIO_LUZ = 105;
+const RADIO_LUZ = 120;
+/**
+ * Encontrar los lugares, más fácil (pedido del usuario, 2026-09-25): basta que
+ * la linterna los toque (no centrarlos) y medio segundo encima. Antes eran el
+ * 80 % del radio y 0,85 s, y la gente pasaba de largo sin descubrirlos.
+ */
+const ALCANCE_DESCUBRIR = 1.0;   // fracción del radio de la linterna
+const PERMANENCIA = 0.5;         // segundos sobre el lugar
 const REJILLA_X = 72;
 const REJILLA_Y = 42;
 const PISTA_ISLA = 0.55;   // fracción explorada a partir de la cual se insinúa
@@ -51,14 +66,34 @@ const ASI_ELEGIMOS = [
   { que: 'El orden', es: 'La prioridad. No es lo mismo llegar en enero que en noviembre: a lo más crítico se va primero.' },
   { que: 'Lo que se te escapó', es: 'También nos pasa. Por eso el plan se revisa: si aparece algo nuevo a mitad de año, se cambia.' },
 ];
+/** Teclas que mueven la linterna, y hacia dónde. */
+const TECLAS_DIR = {
+  w: 'arriba', ArrowUp: 'arriba', s: 'abajo', ArrowDown: 'abajo',
+  a: 'izq', ArrowLeft: 'izq', d: 'der', ArrowRight: 'der',
+};
+/** Velocidad de la linterna con teclado, en fracción del ancho de pantalla por segundo. */
+const VEL_TECLADO = 0.42;
 const ESCALONADO = 0.55;   // segundos entre la salida de un equipo y el siguiente
 const VIAJE = 1.15;        // segundos que tarda cada equipo en llegar
 
 export class EscenaMapa extends Escena {
   constructor(motor) {
     super(motor);
+    /** Video previo a las instrucciones: assets/cinematicas/mapa.mp4 (opcional). */
+    this.cinematica = 'mapa';
     this.costa = generarCosta();
     this.contornoIsla = generarIsla();
+    this.dibujo = null;
+    /** Se resuelve cuando el dibujo cargó (o falló). La usa vista-escena.html. */
+    this.cargaDibujo = Promise.resolve();
+    if (typeof Image !== 'undefined') {
+      this.cargaDibujo = new Promise((ok) => {
+        const im = new Image();
+        im.onload = () => { this.dibujo = im; this._fondo = null; ok(); };
+        im.onerror = () => ok();
+        im.src = DIBUJO_MAPA;
+      });
+    }
     // Los ajustes del puntero viven en input.js (PUNTERO), en unidades físicas.
     this.puntero = new Puntero(motor.jc);
     this.acciones = new Acciones(motor.jc);
@@ -71,6 +106,7 @@ export class EscenaMapa extends Escena {
         'Mueve el Joy-Con como si tuvieras una linterna en la mano: donde apuntes, se ilumina el mapa.',
         'Cuando pases por encima de un lugar, detente un momento sobre él. Si te quedas quieto ahí, el lugar se revela y te muestra su información.',
         'Hay ' + REGIONES.length + ' lugares en total. Recórrelo todo: también las orillas y las esquinas. No todo está en el centro.',
+        'Con teclado: WASD o las flechas mueven la linterna; Espacio o Enter confirman.',
       ],
       aviso: 'Tienes 60 segundos. No te va a alcanzar para mirarlo todo con calma: por eso importa cómo lo recorres.',
       continuar: 'Pulsa {B} para empezar a explorar',
@@ -101,8 +137,29 @@ export class EscenaMapa extends Escena {
       this.raton.x = e.clientX - r.left;
       this.raton.y = e.clientY - r.top;
       this.raton.activo = !this.motor.jc.estado.conectado;
+      this._tecladoActivo = false;
     };
     this._onClic = () => { if (!this.motor.jc.estado.conectado) this.raton.clic = true; };
+
+    // Teclado: WASD o flechas mueven la linterna; Espacio o Enter confirman.
+    // En cuanto se usa, manda sobre el mando; mover el ratón lo devuelve.
+    this._teclas = new Set();
+    this._tecladoActivo = false;
+    this._onTecla = (e) => {
+      const k = TECLAS_DIR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+      if (k) {
+        e.preventDefault();
+        if (!this._tecladoActivo) { this.raton.x = this.pos.x; this.raton.y = this.pos.y; }
+        this._teclas.add(k);
+        this._tecladoActivo = true;
+      } else if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+        this.raton.clic = true;
+      }
+    };
+    this._onSoltar = (e) => {
+      const k = TECLAS_DIR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+      if (k) this._teclas.delete(k);
+    };
   }
 
   get audio() { return this.motor.audio; }
@@ -142,13 +199,19 @@ export class EscenaMapa extends Escena {
     this.motor.jc.recentrar();
     this.puntero.recentrar();
 
+    this._teclas.clear();
+    this._tecladoActivo = false;
     window.addEventListener('mousemove', this._onMover);
     window.addEventListener('mousedown', this._onClic);
+    window.addEventListener('keydown', this._onTecla);
+    window.addEventListener('keyup', this._onSoltar);
   }
 
   salir() {
     window.removeEventListener('mousemove', this._onMover);
     window.removeEventListener('mousedown', this._onClic);
+    window.removeEventListener('keydown', this._onTecla);
+    window.removeEventListener('keyup', this._onSoltar);
   }
 
   alRedimensionar() { this._prepararNiebla(); this._fondo = null; }
@@ -168,7 +231,8 @@ export class EscenaMapa extends Escena {
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx.fillStyle = PALETA.fondo;
     cx.fillRect(0, 0, W, H);
-    this._dibujarTierra(cx, W, H);
+    if (this.dibujo) cx.drawImage(this.dibujo, 0, 0, W, H);
+    else this._dibujarTierra(cx, W, H);
     cv._w = W; cv._h = H;
     this._fondo = cv;
     return cv;
@@ -223,6 +287,16 @@ export class EscenaMapa extends Escena {
    * el puntero iba notablemente menos suave de lo que decía su configuración.
    */
   _calcularPos(dt) {
+    if (this._tecladoActivo) {
+      const W = this.motor.ancho, H = this.motor.alto, v = VEL_TECLADO * W * dt;
+      const t = this._teclas;
+      const dx = (t.has('der') ? 1 : 0) - (t.has('izq') ? 1 : 0);
+      const dy = (t.has('abajo') ? 1 : 0) - (t.has('arriba') ? 1 : 0);
+      const n = dx && dy ? Math.SQRT1_2 : 1;       // en diagonal, no más rápido
+      this.raton.x = limitar(this.raton.x + dx * v * n, 30, W - 30);
+      this.raton.y = limitar(this.raton.y + dy * v * n, 30, H - 30);
+      return { x: this.raton.x, y: this.raton.y };
+    }
     if (this.motor.jc.estado.conectado) {
       this.puntero.actualizar(this.motor.ancho, this.motor.alto, 30, dt);
       return { x: this.puntero.x, y: this.puntero.y };
@@ -239,7 +313,7 @@ export class EscenaMapa extends Escena {
     return this.motor.jc.estado.conectado ? this.acciones.nombreConfirmar : 'CLIC';
   }
 
-  _regionEn(x, y, radio = 54) {
+  _regionEn(x, y, radio = 72) {
     let mejor = null, mejorD = radio;
     for (const r of REGIONES) {
       const d = Math.hypot(r.x * this.motor.ancho - x, r.y * this.motor.alto - y);
@@ -390,9 +464,9 @@ export class EscenaMapa extends Escena {
     for (const r of REGIONES) {
       const rx = r.x * this.motor.ancho, ry = r.y * this.motor.alto;
       if (r.descubierto) { r._brillo = Math.max(0, r._brillo - dt * 1.2); continue; }
-      if (Math.hypot(rx - p.x, ry - p.y) < RADIO_LUZ * 0.8) {
+      if (Math.hypot(rx - p.x, ry - p.y) < RADIO_LUZ * ALCANCE_DESCUBRIR) {
         r._permanencia += dt / r.dificultad;
-        if (r._permanencia >= 0.85) this._descubrir(r, rx, ry);
+        if (r._permanencia >= PERMANENCIA) this._descubrir(r, rx, ry);
       } else {
         r._permanencia = Math.max(0, r._permanencia - dt * 0.6);
       }
@@ -511,7 +585,10 @@ export class EscenaMapa extends Escena {
     c.drawImage(this._capaFondo(W, H), 0, 0, W, H);
     this._dibujarRegiones(c, W, H);
 
-    if (this.fase === 'guia1' || this.fase === 'explorar') c.drawImage(this.niebla, 0, 0, W, H);
+    if (this.fase === 'guia1' || this.fase === 'explorar') {
+      c.drawImage(this.niebla, 0, 0, W, H);
+      if (this.fase === 'explorar') this._dibujarBalizas(c, W, H);
+    }
     if (this.fase === 'explorar' || this.fase === 'decidir') this._dibujarLuz(c, this.pos);
     if (this.fase === 'despacho') this._dibujarDespacho(c, W, H);
 
@@ -529,9 +606,31 @@ export class EscenaMapa extends Escena {
     }
     if (this.fase === 'guia1') this.guia1.dibujar(c, W, H, this.nombreBoton);
     if (this.fase === 'guia2') this.guia2.dibujar(c, W, H, this.nombreBoton);
-    if (this.fase === 'relato') this._dibujarRelato(c, W, H);
+    // Las pantallas de lectura se diseñaron para una pantalla chica: en las
+    // grandes se escalan enteras, cada una según lo que ocupa, para que la
+    // letra se lea de pie y a distancia (pedido del usuario, 2026-09-26).
+    if (this.fase === 'relato') {
+      this._fondoLectura(c, W, H);
+      this._escalar(c, W, H, 920, 640, (w, h) => this._dibujarRelato(c, w, h));
+    }
     if (this.fase === 'resultado') this._dibujarResultado(c, W, H);
-    if (this.fase === 'revelacion') this._dibujarRevelacion(c, W, H);
+    if (this.fase === 'revelacion') {
+      fondoMenu(c, W, H);
+      // Se mide primero: tiene mucho texto, y se agranda justo hasta donde cabe.
+      const alto = this._dibujarRevelacion(c, 1180, 0, true);
+      this._escalar(c, W, H, 1180, alto + 110, (w, h) => this._dibujarRevelacion(c, w, h), 0.75);
+    }
+  }
+
+  /**
+   * Dibuja `fn` en una pantalla virtual de al menos `ancho` × `alto` y la
+   * agranda hasta llenar la real (sin achicar nunca por debajo de lo de antes).
+   */
+  _escalar(c, W, H, ancho, alto, fn, minimo = 1) {
+    const s = limitar(Math.min(W / ancho, H / alto), minimo, 2.2);
+    c.save();
+    c.scale(s, s);
+    try { fn(W / s, H / s); } finally { c.restore(); }
   }
 
   /**
@@ -543,64 +642,63 @@ export class EscenaMapa extends Escena {
    * que hizo convierte la revelación en una definición, que es justo lo que
    * este proyecto evita.
    */
-  _dibujarRevelacion(c, W, H) {
-    c.fillStyle = PALETA.fondoHondo;
-    c.fillRect(0, 0, W, H);
+  /** @param {boolean} [soloMedir] devuelve el alto del bloque sin dibujar nada */
+  _dibujarRevelacion(c, W, H, soloMedir = false) {
     const cx = W / 2;
-    const ancho = Math.min(940, W - 80);
+    const ancho = Math.min(1100, W - 80);
     const colQue = Math.min(230, ancho * 0.27);
 
-    c.font = 'italic 20px ' + FUENTE.narrativa;
+    c.font = 'italic 22px ' + FUENTE.narrativa;
     const entrada = partirLineas(c,
       'Miraste toda la compañía: catorce lugares, y cada uno le importa a alguien. ' +
       'No alcanzaba para todos. Leíste lo que había en cada uno, escogiste los que más pesaban ' +
       'y decidiste a cuáles ir primero.', ancho - 40);
 
-    c.font = '15px ' + FUENTE.interfaz;
+    c.font = '17px ' + FUENTE.interfaz;
     const filas = ASI_ELEGIMOS.map((f) => partirLineas(c, f.es, ancho - colQue - 30));
     const cierre = partirLineas(c,
       'Es la decisión más importante del año del área: define qué se revisa, en qué orden y qué ' +
       'queda por fuera. Se sustenta ante la Dirección, y de ahí sale el trabajo de los doce meses.',
       ancho - 60);
 
-    const altoFilas = filas.reduce((a, l) => a + Math.max(1, l.length) * 21 + 15, 0);
-    const alto = 28 + 46 + entrada.length * 29 + 30 + altoFilas + 40 + 40 + 34 + cierre.length * 22;
+    const altoFilas = filas.reduce((a, l) => a + Math.max(1, l.length) * 24 + 14, 0);
+    const alto = 30 + 46 + entrada.length * 31 + 26 + altoFilas + 40 + 40 + 34 + cierre.length * 24;
+    if (soloMedir) return alto;
     let y = Math.max(24, (H - alto) / 2 - 10);
 
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    c.font = '11px ' + FUENTE.instrumento;
+    c.font = '13px ' + FUENTE.instrumento;
     c.fillStyle = PALETA.oro;
     c.fillText('LO QUE ACABAS DE HACER, EN LA VIDA REAL', cx, y);
-    y += 28;
+    y += 30;
 
     // El mismo título que en las otras dos etapas: el visitante reconoce el
     // momento antes de leer una palabra.
-    c.font = '32px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tinta;
-    c.fillText('Así elegimos', cx, y);
+    tituloMenu(c, 'Así elegimos', cx, y + 20, 42);
+    c.textBaseline = 'top';
     y += 46;
 
     // --- primer tiempo: lo que hizo, contado como lo vivió
     c.globalAlpha = suave(Math.min(1, this.tFase / 1.1));
-    c.font = 'italic 20px ' + FUENTE.narrativa;
+    c.font = 'italic 22px ' + FUENTE.narrativa;
     c.fillStyle = PALETA.tinta;
-    entrada.forEach((l) => { c.fillText(l, cx, y); y += 29; });
+    entrada.forEach((l) => { c.fillText(l, cx, y); y += 31; });
     c.globalAlpha = 1;
-    y += 30;
+    y += 26;
 
     // --- segundo tiempo: la traducción, pieza por pieza
     const x0 = cx - ancho / 2;
     ASI_ELEGIMOS.forEach((f, n) => {
       c.globalAlpha = suave(Math.min(1, (this.tFase - 1.2 - n * 0.18) / 0.5));
       c.textAlign = 'left';
-      c.font = 'bold 16px ' + FUENTE.interfaz;
+      c.font = 'bold 18px ' + FUENTE.interfaz;
       c.fillStyle = PALETA.oroClaro;
       c.fillText(f.que, x0, y);
-      c.font = '15px ' + FUENTE.interfaz;
+      c.font = '17px ' + FUENTE.interfaz;
       c.fillStyle = PALETA.tinta;
-      filas[n].forEach((l, m) => c.fillText(l, x0 + colQue + 30, y + m * 21));
-      y += Math.max(1, filas[n].length) * 21 + 15;
+      filas[n].forEach((l, m) => c.fillText(l, x0 + colQue + 30, y + m * 24));
+      y += Math.max(1, filas[n].length) * 24 + 14;
       c.globalAlpha = 1;
     });
     y += 40;
@@ -609,9 +707,8 @@ export class EscenaMapa extends Escena {
     if (this.tFase > 2.6) {
       c.globalAlpha = suave(Math.min(1, (this.tFase - 2.6) / 0.9));
       c.textAlign = 'center';
-      c.font = '30px ' + FUENTE.narrativa;
-      c.fillStyle = PALETA.oro;
-      c.fillText('Eso es el Plan Anual de Auditoría.', cx, y);
+      tituloMenu(c, 'Eso es el Plan Anual de Auditoría.', cx, y + 16, Math.min(34, W * 0.03));
+      c.textBaseline = 'top';
       c.globalAlpha = 1;
     }
     y += 40;
@@ -619,16 +716,16 @@ export class EscenaMapa extends Escena {
     if (this.tFase > 3.3) {
       c.globalAlpha = suave(Math.min(1, (this.tFase - 3.3) / 0.9));
       c.textAlign = 'center';
-      c.font = '15px ' + FUENTE.interfaz;
+      c.font = '17px ' + FUENTE.interfaz;
       c.fillStyle = PALETA.tintaTenue;
-      cierre.forEach((l) => { c.fillText(l, cx, y); y += 22; });
+      cierre.forEach((l) => { c.fillText(l, cx, y); y += 24; });
       c.globalAlpha = 1;
     }
 
     if (this.tFase > 4) {
       c.textBaseline = 'bottom';
       c.textAlign = 'center';
-      c.font = '15px ' + FUENTE.interfaz;
+      c.font = '18px ' + FUENTE.interfaz;
       c.fillStyle = Math.sin(this.t * 4) > -0.45 ? PALETA.oro : PALETA.tintaDebil;
       c.fillText('Pulsa ' + this.nombreBoton + ' para seguir el recorrido', cx, H - 24);
     }
@@ -706,7 +803,9 @@ export class EscenaMapa extends Escena {
 
     c.textAlign = 'center';
     c.textBaseline = 'bottom';
-    c.font = 'italic 20px ' + FUENTE.narrativa;
+    c.font = 'italic ' + Math.round(limitar(H / 30, 22, 36)) + 'px ' + FUENTE.narrativa;
+    c.fillStyle = 'rgba(0,0,0,0.85)';
+    c.fillText('Los equipos salen del campamento.', W / 2 + 2, H - 44);
     c.fillStyle = PALETA.tinta;
     c.fillText('Los equipos salen del campamento.', W / 2, H - 46);
   }
@@ -720,37 +819,31 @@ export class EscenaMapa extends Escena {
    * la compañía y qué van a revisar en cada una.
    */
   _dibujarRelato(c, W, H) {
-    c.fillStyle = 'rgba(5,7,12,0.94)';
-    c.fillRect(0, 0, W, H);
-
     const cx = W / 2;
-    const ancho = Math.min(820, W - 90);
+    const ancho = Math.min(900, W - 90);
     const izq = cx - ancho / 2;
 
     // ---------- medir para centrar el bloque entero
-    c.font = '14px ' + FUENTE.interfaz;
-    const items = this.elegidas.map((r) => partirLineas(c, r.queRevisamos, ancho - 58));
-    const altoLista = items.reduce((s, l) => s + 26 + l.length * 19 + 14, 0);
-    const alto = 34 + 44 + 30 + altoLista + 40;
+    c.font = '17px ' + FUENTE.interfaz;
+    const items = this.elegidas.map((r) => partirLineas(c, r.queRevisamos, ancho - 62));
+    const altoLista = items.reduce((s, l) => s + 30 + l.length * 23 + 14, 0);
+    const alto = 34 + 44 + 52 + altoLista + 40;
     let y = Math.max(28, (H - alto) / 2 - 10);
 
     c.textAlign = 'center';
+    tituloMenu(c, 'Tu plan', cx, y + 20, 42);
     c.textBaseline = 'top';
-    c.font = '11px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.oro;
-    c.fillText('TU PLAN', cx, y);
-    y += 30;
+    y += 52;
 
     if (!this.elegidas.length) {
-      c.font = '26px ' + FUENTE.narrativa;
-      c.fillStyle = PALETA.riesgo;
-      c.fillText('No enviaste a nadie a ninguna parte.', cx, y);
+      tituloMenu(c, 'No enviaste a nadie a ninguna parte.', cx, y + 14, 30);
+      c.textBaseline = 'top';
       y += 44;
       c.font = '15px ' + FUENTE.interfaz;
       c.fillStyle = PALETA.tintaTenue;
       c.fillText('El territorio se queda como estaba, y nadie sabrá qué había en él.', cx, y);
     } else {
-      c.font = 'italic 19px ' + FUENTE.narrativa;
+      c.font = 'italic 21px ' + FUENTE.narrativa;
       c.fillStyle = PALETA.tintaTenue;
       c.fillText('Esto es lo que acabas de mandar a revisar, y en este orden.', cx, y);
       y += 42;
@@ -761,33 +854,33 @@ export class EscenaMapa extends Escena {
         c.textBaseline = 'top';
         c.fillStyle = PALETA.oro;
         c.beginPath();
-        c.arc(izq + 13, y + 10, 13, 0, Math.PI * 2);
+        c.arc(izq + 15, y + 12, 15, 0, Math.PI * 2);
         c.fill();
         c.fillStyle = PALETA.fondoHondo;
-        c.font = 'bold 13px ' + FUENTE.interfaz;
+        c.font = 'bold 15px ' + FUENTE.interfaz;
         c.textAlign = 'center';
-        c.fillText(String(i + 1), izq + 13, y + 4);
+        c.fillText(String(i + 1), izq + 15, y + 5);
 
         // lugar -> proceso, la analogía en una línea
         c.textAlign = 'left';
-        c.font = '18px ' + FUENTE.narrativa;
+        c.font = '22px ' + FUENTE.narrativa;
         c.fillStyle = PALETA.tinta;
         const nombre = r.nombre + '  ';
-        c.fillText(nombre, izq + 38, y);
+        c.fillText(nombre, izq + 42, y);
         const wN = c.measureText(nombre).width;
-        c.font = '14px ' + FUENTE.interfaz;
-        c.fillStyle = PALETA.tintaDebil;
-        c.fillText('es ', izq + 38 + wN, y + 4);
-        const wEs = c.measureText('es ').width;
         c.font = '16px ' + FUENTE.interfaz;
+        c.fillStyle = PALETA.tintaDebil;
+        c.fillText('es ', izq + 42 + wN, y + 5);
+        const wEs = c.measureText('es ').width;
+        c.font = '19px ' + FUENTE.interfaz;
         c.fillStyle = PALETA.oroClaro;
-        c.fillText(r.equivale, izq + 38 + wN + wEs, y + 2);
+        c.fillText(r.equivale, izq + 42 + wN + wEs, y + 2);
 
         // qué se va a revisar
-        let ly = y + 26;
-        c.font = '14px ' + FUENTE.interfaz;
+        let ly = y + 30;
+        c.font = '17px ' + FUENTE.interfaz;
         c.fillStyle = PALETA.tintaTenue;
-        items[i].forEach((l) => { c.fillText(l, izq + 38, ly); ly += 19; });
+        items[i].forEach((l) => { c.fillText(l, izq + 42, ly); ly += 23; });
 
         y = ly + 14;
       });
@@ -796,7 +889,7 @@ export class EscenaMapa extends Escena {
     if (this.tFase > 1.4) {
       c.textAlign = 'center';
       c.textBaseline = 'bottom';
-      c.font = '15px ' + FUENTE.interfaz;
+      c.font = '18px ' + FUENTE.interfaz;
       c.fillStyle = Math.sin(this.t * 4) > -0.45 ? PALETA.oro : PALETA.tintaDebil;
       c.fillText('Pulsa ' + this.nombreBoton + ' para ver qué tal elegiste', cx, H - 28);
     }
@@ -880,45 +973,92 @@ export class EscenaMapa extends Escena {
         c.globalAlpha = 1;
       }
 
-      const col = idx >= 0 ? PALETA.oro : esCandidata ? PALETA.oroClaro : PALETA.tinta;
-      c.strokeStyle = col;
-      c.lineWidth = idx >= 0 ? 3 : 2;
+      // El punto: un aro grande y claro, con el centro oscuro.
+      const col = idx >= 0 ? PALETA.oro : esCandidata ? '#fff3cf' : '#f0e2bc';
+      const radio = idx >= 0 ? 14 : esCandidata ? 13 : 10;
       c.beginPath();
-      c.arc(x, y, idx >= 0 ? 12 : 8, 0, Math.PI * 2);
-      c.stroke();
-      c.fillStyle = PALETA.fondo;
+      c.arc(x, y, radio + 2, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(5,4,3,0.85)';
       c.fill();
+      c.strokeStyle = col;
+      c.lineWidth = idx >= 0 ? 4 : 3;
+      c.beginPath();
+      c.arc(x, y, radio, 0, Math.PI * 2);
+      c.stroke();
       c.fillStyle = col;
       c.beginPath();
-      c.arc(x, y, 3.5, 0, Math.PI * 2);
+      c.arc(x, y, 4.5, 0, Math.PI * 2);
       c.fill();
 
       if (idx >= 0) {
         c.fillStyle = PALETA.oro;
         c.beginPath();
-        c.arc(x + 16, y - 16, 12, 0, Math.PI * 2);
+        c.arc(x + 19, y - 19, 14, 0, Math.PI * 2);
         c.fill();
+        c.strokeStyle = '#1e0402';
+        c.lineWidth = 2;
+        c.stroke();
         c.fillStyle = PALETA.fondoHondo;
-        c.font = 'bold 14px ' + FUENTE.interfaz;
+        c.font = 'bold 17px ' + FUENTE.interfaz;
         c.textAlign = 'center';
         c.textBaseline = 'middle';
-        c.fillText(String(idx + 1), x + 16, y - 15);
+        c.fillText(String(idx + 1), x + 19, y - 18);
       }
 
-      // Etiqueta: se limita a los bordes para que nunca salga de pantalla.
-      const bw = 56;
-      const lx = limitar(x, bw / 2 + 12, W - bw / 2 - 12);
+      // Etiqueta sobre una placa oscura: se lee sobre cualquier color del
+      // mapa. Se limita a los bordes para que nunca salga de pantalla.
+      c.font = 'bold 18px ' + FUENTE.narrativa;
+      const bw = Math.max(80, c.measureText(r.nombre).width + 16);
+      const lx = limitar(x, bw / 2 + 8, W - bw / 2 - 8);
+      const ly = y + radio + 6;
+      c.fillStyle = 'rgba(8,5,3,0.78)';
+      c.fillRect(lx - bw / 2, ly, bw, 50);
+      c.strokeStyle = esCandidata || idx >= 0 ? 'rgba(240,201,119,0.9)' : 'rgba(205,187,138,0.45)';
+      c.lineWidth = 1.5;
+      c.strokeRect(lx - bw / 2 + 0.5, ly + 0.5, bw - 1, 49);
       c.textAlign = 'center';
       c.textBaseline = 'top';
-      c.font = '13px ' + FUENTE.narrativa;
-      c.fillStyle = esCandidata || idx >= 0 ? PALETA.oroClaro : PALETA.tinta;
-      c.fillText(r.nombre, lx, y + 16);
+      c.fillStyle = esCandidata || idx >= 0 ? PALETA.oroClaro : '#f0e2bc';
+      c.fillText(r.nombre, lx, ly + 5);
 
-      let by = y + 36;
+      const ancho = Math.min(bw - 16, 90);
+      let by = ly + 29;
       for (const l of LECTURAS) {
-        barraLectura(c, lx - bw / 2, by, bw, 4, r[l.clave], l.color, null);
-        by += 7;
+        barraLectura(c, lx - ancho / 2, by, ancho, 5, r[l.clave], l.color, null);
+        by += 6.5;
       }
+    }
+  }
+
+  /**
+   * Balizas sobre la oscuridad: cada lugar de tierra firme sin descubrir late
+   * en dorado, visible desde lejos, para que se sepa hacia dónde llevar la
+   * linterna. No dicen qué es: eso hay que ir a verlo.
+   *
+   * La Isla Brillante NO lleva baliza: que casi nadie la encuentre es la
+   * lección de la etapa (AGENTS.md §7). Sigue con su insinuación tenue de siempre.
+   */
+  _dibujarBalizas(c, W, H) {
+    for (const r of REGIONES) {
+      if (r.descubierto || r.oculta) continue;
+      const x = r.x * W, y = r.y * H;
+      const f = 0.5 + 0.5 * Math.sin(this.t * 3 + r.x * 17);
+      const g = c.createRadialGradient(x, y, 2, x, y, 26);
+      g.addColorStop(0, 'rgba(255,215,120,' + (0.55 + f * 0.35).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(255,190,80,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(x, y, 26, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#ffe7a0';
+      c.beginPath();
+      c.arc(x, y, 4.5 + f * 1.5, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = 'rgba(255,215,120,' + (0.5 - f * 0.4).toFixed(3) + ')';
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(x, y, 12 + f * 14, 0, Math.PI * 2);
+      c.stroke();
     }
   }
 
@@ -951,7 +1091,7 @@ export class EscenaMapa extends Escena {
     for (const r of REGIONES) {
       if (r.descubierto || r._permanencia <= 0.02) continue;
       anillo(c, r.x * this.motor.ancho, r.y * this.motor.alto, 19,
-        r._permanencia / 0.85, PALETA.oro, 3, 'rgba(255,255,255,0.10)');
+        r._permanencia / PERMANENCIA, PALETA.oro, 4, 'rgba(255,255,255,0.15)');
     }
     c.restore();
   }
@@ -990,12 +1130,12 @@ export class EscenaMapa extends Escena {
     x = limitar(x, 12, W - ancho - 12);
     const y = limitar(p.y - alto / 2, 12, H - alto - 64);
 
-    c.fillStyle = 'rgba(6,10,16,0.96)';
-    rectRedondeado(c, x, y, ancho, alto, 10);
-    c.fill();
-    c.strokeStyle = idx >= 0 ? PALETA.oro : 'rgba(217,164,65,0.40)';
-    c.lineWidth = idx >= 0 ? 2 : 1;
-    c.stroke();
+    cajaMenu(c, x, y, ancho, alto, { relleno: 'rgba(8,5,3,0.9)' });
+    if (idx >= 0) {
+      c.strokeStyle = PALETA.oro;
+      c.lineWidth = 2;
+      c.strokeRect(x - 2, y - 2, ancho + 4, alto + 4);
+    }
 
     let cy = y + pad;
     const ix = x + pad;
@@ -1074,13 +1214,17 @@ export class EscenaMapa extends Escena {
   }
 
   // ------------------------------------------------------------------ HUD
+  /** Las cajas de marcadores, con el estilo de los menús (roca y doble borde). */
   _panel(c, x, y, w, h) {
-    c.fillStyle = 'rgba(5,9,14,0.85)';
-    rectRedondeado(c, x, y, w, h, 10);
-    c.fill();
-    c.strokeStyle = 'rgba(217,164,65,0.22)';
-    c.lineWidth = 1;
-    c.stroke();
+    cajaMenu(c, x, y, w, h, { relleno: 'rgba(8,5,3,0.8)' });
+  }
+
+  /** Fondo de las pantallas de lectura (relato, resultado, revelación). */
+  _fondoLectura(c, W, H) {
+    c.save();
+    c.globalAlpha = 0.96;
+    fondoMenu(c, W, H);
+    c.restore();
   }
 
   /** Marcador grande: lo que el visitante mira de reojo sin dejar de jugar. */
@@ -1160,8 +1304,9 @@ export class EscenaMapa extends Escena {
       c.fill();
     }
 
-    // leyenda permanente de las tres barras
-    const ly = 156;
+    // Leyenda permanente de las tres barras, abajo a la izquierda: arriba
+    // taparía El Faro, que está en esa esquina del mapa. Abajo solo hay mar.
+    const ly = H - 40 - (26 + LECTURAS.length * 22);
     this._panel(c, 20, ly, 186, 26 + LECTURAS.length * 22);
     c.textAlign = 'left';
     c.textBaseline = 'top';
@@ -1182,17 +1327,15 @@ export class EscenaMapa extends Escena {
     if (this.elegidas.length > 0) {
       const b = this._rectEnviar();
       const activo = this.sobreEnviar;
-      c.fillStyle = activo ? PALETA.oro : 'rgba(217,164,65,0.12)';
-      rectRedondeado(c, b.x, b.y, b.w, b.h, 10);
-      c.fill();
-      c.strokeStyle = PALETA.oro;
-      c.lineWidth = activo ? 2.5 : 1.5;
-      c.stroke();
+      cajaMenu(c, b.x, b.y, b.w, b.h, {
+        relleno: activo ? 'rgba(120,40,12,0.85)' : 'rgba(8,5,3,0.82)',
+        brillo: activo ? 1 : 0.7,
+      });
 
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.font = 'bold 16px ' + FUENTE.interfaz;
-      c.fillStyle = activo ? PALETA.fondoHondo : PALETA.oroClaro;
+      c.font = 'bold 18px ' + FUENTE.narrativa;
+      c.fillStyle = activo ? '#fff3cf' : PALETA.oroClaro;
       c.fillText('Enviar ' + this.elegidas.length +
         (this.elegidas.length === 1 ? ' equipo' : ' equipos'), b.x + b.w / 2, b.y + b.h / 2);
     }
@@ -1209,12 +1352,15 @@ export class EscenaMapa extends Escena {
 
   // ------------------------------------------------------------ resultado
   _dibujarResultado(c, W, H) {
-    c.fillStyle = 'rgba(5,7,12,0.94)';
-    c.fillRect(0, 0, W, H);
-    if (this.paginaRes === 0) this._resNotas(c, W, H);
-    else if (this.paginaRes === 1) this._resDetalle(c, W, H);
-    else this._resIsla(c, W, H);
-    this._piePagina(c, W, H);
+    this._fondoLectura(c, W, H);
+    // Cada página ocupa distinto: se agranda según lo suyo.
+    const [aw, ah] = this.paginaRes === 0 ? [780, 430] : this.paginaRes === 1 ? [880, 540] : [820, 470];
+    this._escalar(c, W, H, aw, ah, (w, h) => {
+      if (this.paginaRes === 0) this._resNotas(c, w, h);
+      else if (this.paginaRes === 1) this._resDetalle(c, w, h);
+      else this._resIsla(c, w, h);
+      this._piePagina(c, w, h);
+    });
   }
 
   _piePagina(c, W, H) {
@@ -1249,9 +1395,8 @@ export class EscenaMapa extends Escena {
     c.fillText('RESULTADO DE TU EXPEDICIÓN', cx, y);
     y += 26;
 
-    c.font = '40px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tinta;
-    c.fillText(R.veredicto, cx, y);
+    tituloMenu(c, R.veredicto, cx, y + 24, 48);
+    c.textBaseline = 'top';
     y += 62;
 
     const notas = [
@@ -1391,9 +1536,8 @@ export class EscenaMapa extends Escena {
     c.fillText('HABÍA UN LUGAR MÁS', cx, y);
     y += 34;
 
-    c.font = '38px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tinta;
-    c.fillText(isla.nombre, cx, y);
+    tituloMenu(c, isla.nombre, cx, y + 22, 46);
+    c.textBaseline = 'top';
     y += 54;
 
     c.font = 'italic 17px ' + FUENTE.narrativa;

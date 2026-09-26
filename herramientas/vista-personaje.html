@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vista del personaje</title>
+<!--
+  vista-personaje.html — El personaje de El Camino, quieto, de frente, de lado
+  y de espaldas, para compararlo con las fotos de referencia sin jugar.
+
+  Uso:  http://localhost:8740/herramientas/vista-personaje.html
+        &jugador=2   la variante del Jugador 2
+        &correr=1    en plena zancada, en vez de quieta
+
+  Como vista-escena.html, deja la imagen en un cuadro de texto (data URL)
+  para poder mirarla desde Chrome sin interfaz. Herramienta de desarrollo.
+-->
+<style>
+  html, body { margin: 0; background: #1a0604; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #png { position: fixed; left: -9999px; width: 10px; height: 10px; }
+  #err { position: fixed; top: 8px; left: 8px; color: #e0614a; font: 13px Consolas, monospace; }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<textarea id="png"></textarea>
+<pre id="err"></pre>
+<script>
+  addEventListener('error', (e) => { document.getElementById('err').textContent = 'ERROR: ' + e.message; });
+</script>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';
+import { Explorador, CAMISETAS } from '../src/juego/camino3d/explorador.js';
+
+const q = new URLSearchParams(location.search);
+const jugador = q.get('jugador') === '2' ? 1 : 0;
+const lienzo = document.getElementById('lienzo');
+const W = innerWidth, H = innerHeight;
+const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, preserveDrawingBuffer: true });
+render.setSize(W, H, false);
+render.outputColorSpace = THREE.SRGBColorSpace;
+render.setClearColor(0x2a0b08, 1);
+
+const escena = new THREE.Scene();
+escena.add(new THREE.HemisphereLight(0xfff4e0, 0x3a2418, 1.1));
+const sol = new THREE.DirectionalLight(0xffffff, 1.2);
+sol.position.set(3, 6, 4);
+escena.add(sol);
+const suelo = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshLambertMaterial({ color: 0x5a4a3a }));
+suelo.rotation.x = -Math.PI / 2;
+escena.add(suelo);
+
+const e = new Explorador(THREE, CAMISETAS[jugador]);
+escena.add(e.raiz);
+// Una carrera de mentira, solo para posar: quieta o en plena zancada.
+const falsa = { xCarril: 1, carril: 1, distancia: 0, velocidad: q.get('correr') ? 20 : 0, tropiezo: 0, lente: 0 };
+e.actualizar(falsa, q.get('correr') ? 0.13 : 0);
+if (!q.get('correr')) {
+  e.piernas.forEach((p) => { p.rotation.x = 0; });
+  e.brazos[0].rotation.x = 0;
+}
+
+// Tres vistas: de frente (la cara mira a −z), de lado y de espaldas.
+const vistas = [
+  { nombre: 'frente', pos: [0, 1.3, -4.2] },
+  { nombre: 'lado', pos: [4.2, 1.3, 0] },
+  { nombre: 'espalda', pos: [0, 1.3, 4.2] },
+];
+const cam = new THREE.PerspectiveCamera(35, (W / 3) / H, 0.1, 50);
+render.setScissorTest(true);
+vistas.forEach((v, i) => {
+  cam.position.set(...v.pos);
+  cam.lookAt(0, 1.1, 0);
+  render.setViewport((W / 3) * i, 0, W / 3, H);
+  render.setScissor((W / 3) * i, 0, W / 3, H);
+  render.render(escena, cam);
+});
+document.getElementById('png').textContent = lienzo.toDataURL('image/jpeg', 0.85);
+</script>
+</body>
+</html>
