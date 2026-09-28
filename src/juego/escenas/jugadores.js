@@ -108,7 +108,7 @@ export class EscenaJugadores extends Escena {
       { texto: 'Dos jugadores', accion: () => this._empezarVinculo(2) },
       { texto: '‹ Volver', accion: () => this._volverAlInicio() },
     ], [
-      'El Mapa lo juega el Jugador 1. El Camino y El Regreso, los que elijan aquí.',
+      'El Mapa lo juega el Jugador 1. El Camino y El Tesoro, los que elijan aquí.',
       'Cada jugador usa un Joy-Con (o el teclado).',
     ], '¿Cuántos juegan?');
     this.menu.activar();

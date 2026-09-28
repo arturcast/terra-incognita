@@ -300,6 +300,43 @@ test('Joy-Con: el gatillo salta un video (de cualquiera de los dos mandos)', asy
   }
 });
 
+test('dos videos seguidos: la capa no se cierra entre uno y otro y el primero queda en su último cuadro', async () => {
+  const { Cinematicas } = await import('../src/core/cinematica.js');
+  const falso = () => ({
+    style: { display: '' }, src: '', vaciado: 0, reproduciendo: false,
+    pause() { this.reproduciendo = false; },
+    removeAttribute() { this.src = ''; this.vaciado++; },
+    load() {},
+    play() { this.reproduciendo = true; return Promise.resolve(); },
+  });
+  const videos = [falso(), falso()];
+  const clases = new Set(['oculto']);
+  const capa = {
+    querySelectorAll: () => videos,
+    classList: { add: (c) => clases.add(c), remove: (c) => clases.delete(c) },
+    addEventListener() {}, removeEventListener() {},
+  };
+  const cin = new Cinematicas(capa, []);
+
+  const primero = cin.reproducir('final', { hayOtro: true });
+  videos[0].onloadeddata();
+  assert.equal(clases.has('oculto'), false, 'se ve el primer video');
+  videos[0].onended();
+  await primero;
+  assert.equal(clases.has('oculto'), false, 'entre los dos videos la capa sigue abierta');
+  assert.equal(videos[0].vaciado, 0, 'el primero conserva su último cuadro');
+
+  const segundo = cin.reproducir('final2');
+  assert.match(videos[1].src, /final2\.mp4$/, 'el segundo carga en el otro reproductor');
+  assert.equal(videos[0].style.display, '', 'mientras carga, sigue el cuadro del primero');
+  videos[1].onloadeddata();
+  assert.equal(videos[0].style.display, 'none', 'ya con imagen, el primero se quita');
+  assert.equal(videos[1].reproduciendo, true);
+  videos[1].onended();
+  await segundo;
+  assert.equal(clases.has('oculto'), true, 'al acabar el último, la capa se cierra');
+});
+
 test('un Joy-Con de reserva (no en juego) se vincula con gatillo + hombro y entra en su ranura', async () => {
   const { motor, mandos } = montar(['R', 'R'], [true, false]);
   const activados = [];

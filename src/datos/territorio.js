@@ -221,7 +221,7 @@ export const REGIONES = [
     oculta: true,
     pista: 'Brilla a lo lejos, separada de todo. No se parece en nada al resto del territorio.',
     verdad: 'Está lejos de tierra firme y no se parece a nada del resto del mapa. Casi nadie llega hasta acá — y sin embargo se mueve mucho dinero.',
-    porQueImporta: 'Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. No se parece al resto y por eso se revisa poco. Pero mueve plata de verdad y tiene sus propios riesgos. Lo que una compañía no mira porque "no es lo nuestro" suele ser justo lo que menos control tiene.',
+    porQueImporta: 'Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. No se parece al resto: tiene retos y riesgos distintos, y mueve plata de verdad. Lo diferente o esporádico también hay que mirarlo, porque puede pesar mucho para la compañía.',
   },
 ];
 

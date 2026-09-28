@@ -5,6 +5,7 @@
  * están. El video se ve primero y después el visitante lee lo de siempre.
  *
  * Los videos van en `assets/cinematicas/<etapa>.mp4` (mapa, camino, regreso).
+ * Una escena puede pedir varios seguidos (el final: `final` y `final2`).
  * Si el archivo no está, no pasa nada: se sigue directo a las instrucciones.
  * Así el hueco existe desde ya y cada video se agrega el día que esté listo,
  * sin tocar código.
@@ -29,7 +30,12 @@ export class Cinematicas {
    */
   constructor(capa, jugadores) {
     this.capa = capa;
-    this.video = capa.querySelector('video');
+    // Dos <video> que se turnan: cuando un video sigue a otro, el último
+    // cuadro del primero se queda en pantalla hasta que el segundo tiene el
+    // suyo. Con uno solo, cambiar la fuente dejaba un pantallazo negro.
+    this.videos = capa.querySelectorAll ? [...capa.querySelectorAll('video')] : [capa.querySelector('video')];
+    /** El video que quedó congelado en su último cuadro esperando al siguiente. */
+    this._visible = null;
     this.acciones = jugadores.map((j) => new Acciones(j));
     this._fin = null;
     this._t = 0;
@@ -41,21 +47,44 @@ export class Cinematicas {
   /**
    * Reproduce `assets/cinematicas/<nombre>.mp4` y espera a que termine o a
    * que lo salten. Si no existe, vuelve enseguida.
+   * @param {{hayOtro?: boolean}} [opciones] hayOtro: viene otro video justo
+   *   después; la capa no se cierra y este se queda en su último cuadro.
    */
-  reproducir(nombre) {
+  reproducir(nombre, { hayOtro = false } = {}) {
     return new Promise((resolver) => {
-      const v = this.video;
+      const anterior = this._visible;
+      const v = this.videos.length > 1 && anterior === this.videos[0] ? this.videos[1] : this.videos[0];
       let listo = false;
+      const vaciar = (video) => {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      };
+      // El cuadro congelado del video anterior se quita solo cuando ya hay
+      // otra imagen que mostrar (o cuando se cierra la capa).
+      const soltarAnterior = () => {
+        if (anterior && anterior !== v) {
+          anterior.style.display = 'none';
+          vaciar(anterior);
+        }
+        this._visible = null;
+      };
       const terminar = () => {
         if (!this._fin) return;
         this._fin = null;
         clearTimeout(espera);
-        v.pause();
-        v.removeAttribute('src');
-        v.load();
-        this.capa.classList.add('oculto');
         window.removeEventListener('keydown', this._onTecla);
         this.capa.removeEventListener('mousedown', this._onClic);
+        if (hayOtro && listo) {
+          v.pause();
+          this._visible = v;
+        } else {
+          vaciar(v);
+          if (!hayOtro) {
+            soltarAnterior();
+            this.capa.classList.add('oculto');
+          }
+        }
         resolver();
       };
       this._fin = terminar;
@@ -68,6 +97,8 @@ export class Cinematicas {
       v.onloadeddata = () => {
         listo = true;
         clearTimeout(espera);
+        v.style.display = '';
+        soltarAnterior();
         this.capa.classList.remove('oculto');
         window.addEventListener('keydown', this._onTecla);
         this.capa.addEventListener('mousedown', this._onClic);

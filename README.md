@@ -52,7 +52,7 @@ eso. Ahora dice "linterna" y "lugar".
 | 3 · El Regreso | estilo *Flappy Bird* | 1 o 2 | Recomendaciones y seguimiento | **Jugable** |
 
 El recorrido completo: **portada → cuántos juegan y sus nombres → video de
-inicio → El Mapa → El Camino → El Regreso → video final → recuento de puntos y
+inicio → El Mapa → El Camino → El Tesoro → videos finales → recuento de puntos y
 tabla de los mejores → cierre.** Cada etapa tiene su video, sus instrucciones,
 su tablero y su pantalla de revelación («Así elegimos / trabajamos / terminamos»).
 
@@ -143,10 +143,17 @@ teclado** deja la experiencia jugable. Es una red de seguridad deliberada.
 ### Videos, música y puntajes
 
 - **Videos** (cinemáticas): `assets/cinematicas/` — `inicio`, `mapa`, `camino`,
-  `regreso` y `final` (.mp4). Si falta uno, el juego sigue sin él. Cómo se
+  `regreso`, `final` y `final2` (.mp4; `final2` es la continuación de `final`
+  y va pegado a él, sin corte). Si falta uno, el juego sigue sin él. Cómo se
   hicieron y cómo rehacerlos: [`docs/CINEMATICAS.md`](docs/CINEMATICAS.md).
-- **Música:** `assets/musica/tema.mp3`, en bucle; se aparta mientras suena un
-  video. Si falta, suena una música generada en el momento. Los efectos de
+- **Música:** `assets/musica/tema.mp3` en portada, recorrido, recuento y
+  cierre, y una canción por etapa: `mapa.mp3` (Egyptian Mood 1), `camino.mp3`
+  (Cabal Attack), de Peter Connelly, y `regreso.mp3` (El Tesoro: tema final de
+  Tomb Raider 2).
+  Todas en bucle, con fundido cruzado al cambiar y el mismo volumen (se ajusta
+  en `TEMAS`, `src/core/audio.js`; se mide con `herramientas/medir-musica.html`).
+  Se apartan mientras suena un video. Si falta la de una etapa, suena la
+  principal; si falta la principal, una música generada en el momento. Los efectos de
   sonido siempre se generan con Web Audio.
 - **Tabla de los mejores:** se guarda en el propio navegador del equipo del
   stand (no necesita internet). Se vacía desde el panel de mandos (tecla J).

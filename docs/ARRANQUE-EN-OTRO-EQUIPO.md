@@ -85,10 +85,10 @@ inicio.
 Antes de tocar nada, y después de cada cambio:
 
 ```bash
-node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js
+node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js tests/musica.test.js
 ```
 
-Resultado esperado hoy: **166 pruebas, 158 pasan, 0 fallan, 8 omitidas.** Las
+Resultado esperado hoy: **174 pruebas, 166 pasan, 0 fallan, 8 omitidas.** Las
 omitidas son pruebas de dirección sobre grabaciones antiguas del mando que no
 las permiten: es lo normal, no un fallo.
 

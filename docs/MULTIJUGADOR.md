@@ -239,7 +239,7 @@ mando». Reglas:
 - El relevo automático (batería agotada o desconexión) toma cualquier mando
   libre, del lado que sea.
 
-Pruebas: `tests/joycon-flujo.test.js` (la vinculación con dos Joy-Con del mismo
+Pruebas: `tests/joycon-flujo.test.js tests/musica.test.js` (la vinculación con dos Joy-Con del mismo
 lado, con Joy-Con + teclado, con un mando de reserva, y que un mando no escribe
 por el otro jugador) y `tests/multijugador.test.js` (dos mandos del mismo lado;
 el evento `registro`).

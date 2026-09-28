@@ -58,12 +58,14 @@ export class EscenaRegreso extends Escena {
     super(motor);
     /** Video previo a las instrucciones: assets/cinematicas/regreso.mp4 (opcional). */
     this.cinematica = 'regreso';
+    /** Su canción (TEMAS en audio.js). */
+    this.tema = 'regreso';
     this.acciones = motor.jugadores.map((j) => new Acciones(j));
 
     this.guia = new Briefing({
-      etiqueta: 'Etapa 3 · El Regreso',
+      etiqueta: 'Etapa 3 · El Tesoro',
       titulo: 'El camino despejado',
-      entrada: 'Lo que encontraste no se quedó guardado: sirvió para arreglar lo que estaba mal. Ahora el regreso es más fácil, y mientras más encontraste, más despejado está.',
+      entrada: 'Lo que encontraste no se quedó guardado: sirvió para arreglar lo que estaba mal. Ahora el camino hacia el tesoro es más fácil, y mientras más encontraste, más despejado está.',
       pasos: [
         'Pulsa el gatillo para batir las alas. Nada más. Con teclado: Jugador 1 con W o Espacio; Jugador 2 con la flecha ↑.',
         'Atraviesa los aros dorados: cada uno es una mejora que ya funciona y suma puntos, hasta el último segundo.',
@@ -1072,7 +1074,7 @@ export class EscenaRegreso extends Escena {
 
     let y = Math.max(20, H * 0.07);
     c.textAlign = 'center';
-    tituloMenu(c, 'Tu regreso', cx, y + 28 * s, Math.round(52 * s));
+    tituloMenu(c, 'Tu tesoro', cx, y + 28 * s, Math.round(52 * s));
     y += 76 * s;
 
     const alto = 360 * s;

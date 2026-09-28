@@ -35,8 +35,11 @@ const TIEMPO_ETAPA = 0.9;          // s que tarda en subir cada etapa
 export class EscenaRecuento extends Escena {
   constructor(motor) {
     super(motor);
-    /** Video de cierre de la historia: assets/cinematicas/final.mp4 (opcional). */
-    this.cinematica = 'final';
+    /**
+     * Videos de cierre de la historia, uno detrás del otro sin corte:
+     * assets/cinematicas/final.mp4 y su continuación, final2.mp4 (opcionales).
+     */
+    this.cinematica = ['final', 'final2'];
     this.acciones = motor.jugadores.map((j) => new Acciones(j));
     this._teclas = [];
     // En captura, y frenando la tecla: mientras se escribe un nombre, la P no

@@ -139,6 +139,12 @@ for (let k = 0; k < Math.round(t * 60); k++) {
   }
   escena.actualizar(1 / 60);
 }
+// El Mapa: la ficha de un lugar como si se le apuntara: &candidata=ramales
+const cand = nombre === 'mapa' && REGIONES.find((r) => r.id === q.get('candidata'));
+if (cand) {
+  escena.candidata = cand;
+  escena.pos = { x: cand.x * motor.ancho, y: cand.y * motor.alto };
+}
 // El Camino: ver el paso de un tramo al otro en un momento dado (0-1): &transicion=0.5
 if (q.get('transicion') && escena.transiciones) escena.transiciones[0] = parseFloat(q.get('transicion'));
 // El Camino: un destello de recogida congelado a medio camino: &destello=dato|control|hallazgo
@@ -163,8 +169,9 @@ if (q.get('pausa')) {
 
 // La imagen, en pequeño, dentro de la página.
 const mini = document.createElement('canvas');
-mini.width = 900;
-mini.height = Math.round(900 * motor.canvas.height / motor.canvas.width);
+// &grande=1: a tamaño real, para mirar de cerca letras chicas.
+mini.width = q.get('grande') ? motor.canvas.width : 900;
+mini.height = Math.round(mini.width * motor.canvas.height / motor.canvas.width);
 const mc = mini.getContext('2d');
 const tres = document.getElementById('lienzo3d');
 if (tres && tres.style.display !== 'none') mc.drawImage(tres, 0, 0, mini.width, mini.height);

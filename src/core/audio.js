@@ -2,7 +2,8 @@
  * audio.js — Música y sonidos.
  *
  * MÚSICA (desde 2026-09-26, pedido del usuario): el tema principal de Tomb
- * Raider (1996), en `assets/musica/tema.mp3`, en bucle durante todo el juego.
+ * Raider (1996), en `assets/musica/tema.mp3`, en bucle; desde 2026-09-27 cada
+ * etapa tiene además su propia canción (ver TEMAS).
  * OJO: es música con derechos de autor; el usuario lo decidió así, igual que
  * con las texturas (docs/ACTIVOS-VISUALES.md §7.1). Si el archivo no está o no
  * se puede leer, suena la música generada de siempre, que se describe abajo.
@@ -28,15 +29,32 @@ const ESCALAS = {
   logro: [0, 2, 4, 5, 7, 9, 11],      // mayor — revelación
 };
 
-/** El tema que suena en todo el juego. Si falta, música generada. */
-const TEMA = './assets/musica/tema.mp3';
 /**
- * Volumen del tema. La grabación es fuerte (RMS ≈ −13 dB): a 0,32 queda en
- * torno a −23 dB, por debajo de los efectos, que tienen que oírse.
+ * Volumen del tema principal. La grabación es fuerte (RMS ≈ −13 dB): a 0,32
+ * queda en torno a −23 dB, por debajo de los efectos, que tienen que oírse.
  */
 const VOLUMEN_TEMA = 0.32;
-/** Dónde empieza el sonido (s): el archivo trae 0,18 s de silencio. Termina con su propio fundido. */
-const INICIO_TEMA = 0.18;
+/**
+ * Las canciones del juego (2026-09-27, pedido del usuario): el tema principal
+ * en portada, recorrido, recuento y cierre, y una por etapa: dos de Peter
+ * Connelly y, en El Tesoro, el tema final de Tomb Raider 2 (misma decisión
+ * de derechos de autor que el tema). Cada escena dice cuál quiere en
+ * `this.tema`; sin eso suena la principal.
+ *
+ * `volumen` iguala las cuatro a unos −23 dB (medido con
+ * herramientas/medir-musica.html: tema −12,6 · mapa −16,8 · camino −18,6 ·
+ * regreso −19,7 dB RMS). `inicio` salta el silencio del principio del archivo.
+ * Si una falta, suena la principal; si falta la principal, la generada.
+ */
+const TEMAS = {
+  principal: { archivo: 'tema.mp3', volumen: VOLUMEN_TEMA, inicio: 0.18 },
+  mapa: { archivo: 'mapa.mp3', volumen: 0.52, inicio: 0.06 },        // Egyptian Mood 1
+  camino: { archivo: 'camino.mp3', volumen: 0.64, inicio: 0.33 },    // Cabal Attack
+  regreso: { archivo: 'regreso.mp3', volumen: 0.72, inicio: 0.09 },  // Tomb Raider 2, Ending Theme
+};
+const CARPETA_MUSICA = './assets/musica/';
+/** Fundido cruzado al pasar de una canción a otra, en segundos. */
+const CRUCE_TEMAS = 1.2;
 
 const PISTAS = {
   intro: {
@@ -93,6 +111,12 @@ export class Audio {
     this._temporizador = null;
     this._proximoPaso = 0;
     this._paso = 0;
+    /** Canciones decodificadas por clave de TEMAS (null si no se pudo). */
+    this.temas = {};
+    this._temaElegido = 'principal';
+    /** Lo que suena ahora: {clave, fuente, ganancia, desde, arranque}. */
+    this._sonando = null;
+    this._posPrincipal = 0;
   }
 
   async iniciar() {
@@ -136,45 +160,102 @@ export class Audio {
     this._cargarTema();
   }
 
-  /** Carga el tema sin frenar el arranque. Mientras llega, no suena nada. */
+  /**
+   * Carga el tema principal sin frenar el arranque (mientras llega, no suena
+   * nada) y después, por detrás, las canciones de las etapas.
+   */
   async _cargarTema() {
     this.tema = null;
     this._temaCargando = true;
-    try {
-      const r = await fetch(TEMA);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      this.tema = await this.ctx.decodeAudioData(await r.arrayBuffer());
-    } catch (e) {
-      console.warn('Sin tema musical, suena la música generada:', e && e.message);
-    }
+    this.tema = await this._decodificar('principal');
+    if (!this.tema) console.warn('Sin tema musical, suena la música generada.');
     this._temaCargando = false;
     // Si alguien pidió música mientras cargaba, ahora sí.
     const pedida = this._nombrePista;
     this._nombrePista = null;
     if (pedida) this.musica(pedida);
+    if (!this.tema) return;
+    for (const clave of Object.keys(TEMAS)) {
+      if (clave === 'principal') continue;
+      await this._decodificar(clave);
+      // Si ya estaba en esa etapa mientras cargaba, entra ahora con su canción.
+      if (clave === this._temaElegido && this._nombrePista) this._sonarTema();
+    }
+  }
+
+  /** Descarga y decodifica una canción de TEMAS. Devuelve null si no está. */
+  async _decodificar(clave) {
+    try {
+      const r = await fetch(CARPETA_MUSICA + TEMAS[clave].archivo);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      this.temas[clave] = await this.ctx.decodeAudioData(await r.arrayBuffer());
+    } catch (e) {
+      console.warn('Sin la canción «' + clave + '»:', e && e.message);
+      this.temas[clave] = null;
+    }
+    return this.temas[clave];
   }
 
   /** Sube o baja la música (el tema o la generada) hasta `valor` (0-1) en `seg` segundos. */
   _rampaMusica(valor, seg) {
     const t = this.ctx.currentTime;
-    for (const [bus, escala] of [[this.busMusica, 1], [this.busTema, VOLUMEN_TEMA]]) {
+    for (const bus of [this.busMusica, this.busTema]) {
       bus.gain.cancelScheduledValues(t);
       bus.gain.setValueAtTime(bus.gain.value, t);
-      bus.gain.linearRampToValueAtTime(valor * escala, t + seg);
+      bus.gain.linearRampToValueAtTime(valor, t + seg);
     }
   }
 
-  /** Pone a sonar el tema en bucle, si no sonaba ya. Sigue donde iba. */
+  /**
+   * La escena que entra dice qué canción quiere ('mapa', 'camino', 'regreso';
+   * cualquier otra cosa es la principal). Si la música ya suena, cambia con
+   * fundido cruzado.
+   */
+  elegirTema(clave) {
+    const elegido = TEMAS[clave] ? clave : 'principal';
+    if (elegido === this._temaElegido) return;
+    this._temaElegido = elegido;
+    if (this.activo && this.tema && this._nombrePista) this._sonarTema();
+  }
+
+  /**
+   * Pone a sonar en bucle la canción elegida, si no sonaba ya. Si la de la
+   * etapa aún no ha cargado (o falta), sigue la principal. La principal
+   * retoma donde iba; las de las etapas empiezan desde el principio.
+   */
   _sonarTema() {
-    if (this._fuenteTema) return;
+    const clave = this.temas[this._temaElegido] ? this._temaElegido : 'principal';
+    if (this._sonando && this._sonando.clave === clave) return;
+    const t = this.ctx.currentTime;
+
+    const viejo = this._sonando;
+    if (viejo) {
+      viejo.ganancia.gain.cancelScheduledValues(t);
+      viejo.ganancia.gain.setValueAtTime(viejo.ganancia.gain.value, t);
+      viejo.ganancia.gain.linearRampToValueAtTime(0, t + CRUCE_TEMAS);
+      viejo.fuente.stop(t + CRUCE_TEMAS + 0.05);
+      if (viejo.clave === 'principal') {
+        const { inicio } = TEMAS.principal;
+        const largo = this.tema.duration - inicio;
+        this._posPrincipal = inicio + ((viejo.desde - inicio) + Math.max(0, t - viejo.arranque)) % largo;
+      }
+    }
+
+    const def = TEMAS[clave];
+    const buffer = this.temas[clave];
+    const desde = clave === 'principal' ? (this._posPrincipal || def.inicio) : def.inicio;
     const f = this.ctx.createBufferSource();
-    f.buffer = this.tema;
+    f.buffer = buffer;
     f.loop = true;
-    f.loopStart = INICIO_TEMA;
-    f.loopEnd = this.tema.duration;
-    f.connect(this.busTema);
-    f.start(this.ctx.currentTime + 0.05, INICIO_TEMA);
-    this._fuenteTema = f;
+    f.loopStart = def.inicio;
+    f.loopEnd = buffer.duration;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(def.volumen, t + (viejo ? CRUCE_TEMAS : 0.05));
+    f.connect(g);
+    g.connect(this.busTema);
+    f.start(t + 0.05, desde);
+    this._sonando = { clave, fuente: f, ganancia: g, desde, arranque: t + 0.05 };
   }
 
   _impulso(duracion, decaimiento) {

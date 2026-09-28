@@ -64,7 +64,7 @@ const ASI_ELEGIMOS = [
   { que: 'Las tres barras', es: 'Riesgo, importancia y señales. Con eso se decide, y los datos son solo una de las tres: un proceso puede estar en peligro sin que nada lo esté gritando.' },
   { que: 'Los cinco equipos', es: 'Las auditorías que caben en el año. Escoger a dónde van es decir que no a los otros nueve, y hay que poder sustentarlo.' },
   { que: 'El orden', es: 'La prioridad. No es lo mismo llegar en enero que en noviembre: a lo más crítico se va primero.' },
-  { que: 'Lo que se te escapó', es: 'También nos pasa. Por eso el plan se revisa: si aparece algo nuevo a mitad de año, se cambia.' },
+  { que: 'Lo que se te escapó', es: 'También nos pasa. Por eso los riesgos se vigilan de forma permanente: si aparece algo relevante, el plan se ajusta en ese momento, sin esperar.' },
 ];
 /** Teclas que mueven la linterna, y hacia dónde. */
 const TECLAS_DIR = {
@@ -81,6 +81,8 @@ export class EscenaMapa extends Escena {
     super(motor);
     /** Video previo a las instrucciones: assets/cinematicas/mapa.mp4 (opcional). */
     this.cinematica = 'mapa';
+    /** Su canción (TEMAS en audio.js). */
+    this.tema = 'mapa';
     this.costa = generarCosta();
     this.contornoIsla = generarIsla();
     this.dibujo = null;
@@ -658,7 +660,9 @@ export class EscenaMapa extends Escena {
     const filas = ASI_ELEGIMOS.map((f) => partirLineas(c, f.es, ancho - colQue - 30));
     const cierre = partirLineas(c,
       'Es la decisión más importante del año del área: define qué se revisa, en qué orden y qué ' +
-      'queda por fuera. Se sustenta ante la Dirección, y de ahí sale el trabajo de los doce meses.',
+      'queda por fuera. Se sustenta ante la Dirección y ante el Comité de Auditoría y Riesgos. ' +
+      'Y no es fijo: los riesgos de la compañía se vigilan todo el tiempo, y si durante el año ' +
+      'surge algo relevante, el plan se ajusta y cambian el enfoque o las prioridades.',
       ancho - 60);
 
     const altoFilas = filas.reduce((a, l) => a + Math.max(1, l.length) * 24 + 14, 0);
@@ -1007,22 +1011,32 @@ export class EscenaMapa extends Escena {
 
       // Etiqueta sobre una placa oscura: se lee sobre cualquier color del
       // mapa. Se limita a los bordes para que nunca salga de pantalla.
+      // Debajo del nombre va el proceso real: decisión del usuario
+      // (2026-09-27) para que el visitante sepa desde el principio qué está
+      // eligiendo, aunque adelante lo que el cierre revela.
       c.font = 'bold 18px ' + FUENTE.narrativa;
-      const bw = Math.max(80, c.measureText(r.nombre).width + 16);
+      const anchoNombre = c.measureText(r.nombre).width;
+      c.font = '13px ' + FUENTE.interfaz;
+      const anchoProceso = c.measureText(r.equivale).width;
+      const bw = Math.max(80, anchoNombre + 16, anchoProceso + 16);
       const lx = limitar(x, bw / 2 + 8, W - bw / 2 - 8);
       const ly = y + radio + 6;
       c.fillStyle = 'rgba(8,5,3,0.78)';
-      c.fillRect(lx - bw / 2, ly, bw, 50);
+      c.fillRect(lx - bw / 2, ly, bw, 68);
       c.strokeStyle = esCandidata || idx >= 0 ? 'rgba(240,201,119,0.9)' : 'rgba(205,187,138,0.45)';
       c.lineWidth = 1.5;
-      c.strokeRect(lx - bw / 2 + 0.5, ly + 0.5, bw - 1, 49);
+      c.strokeRect(lx - bw / 2 + 0.5, ly + 0.5, bw - 1, 67);
       c.textAlign = 'center';
       c.textBaseline = 'top';
+      c.font = 'bold 18px ' + FUENTE.narrativa;
       c.fillStyle = esCandidata || idx >= 0 ? PALETA.oroClaro : '#f0e2bc';
       c.fillText(r.nombre, lx, ly + 5);
+      c.font = '13px ' + FUENTE.interfaz;
+      c.fillStyle = PALETA.oro;
+      c.fillText(r.equivale, lx, ly + 28);
 
       const ancho = Math.min(bw - 16, 90);
-      let by = ly + 29;
+      let by = ly + 47;
       for (const l of LECTURAS) {
         barraLectura(c, lx - ancho / 2, by, ancho, 5, r[l.clave], l.color, null);
         by += 6.5;
@@ -1109,8 +1123,9 @@ export class EscenaMapa extends Escena {
    * Ficha flotante del lugar al que se apunta, durante la fase de decidir.
    *
    * Sin esto el visitante ve tres barras de colores y un nombre bonito, y no
-   * tiene forma de saber qué hay ahí. La ficha da las tres lecturas en
-   * palabras y una frase que insinúa el lugar sin nombrar el proceso.
+   * tiene forma de saber qué hay ahí. La ficha da el proceso real (decisión
+   * del usuario, 2026-09-27), las tres lecturas en palabras y una frase que
+   * insinúa el lugar.
    *
    * Se coloca al lado del puntero y salta al otro lado si no cabe, para no
    * tapar nunca el lugar que se está mirando.
@@ -1122,7 +1137,7 @@ export class EscenaMapa extends Escena {
     c.font = '13px ' + FUENTE.interfaz;
     const lineas = partirLineas(c, r.pista, ancho - pad * 2);
     const idx = this.elegidas.findIndex((e) => e.id === r.id);
-    const alto = pad * 2 + 26 + LECTURAS.length * 22 + 8
+    const alto = pad * 2 + 26 + 22 + LECTURAS.length * 22 + 8
       + lineas.length * 18 + (idx >= 0 ? 20 : 0);
 
     let x = p.x + 38;
@@ -1146,6 +1161,10 @@ export class EscenaMapa extends Escena {
     c.fillStyle = PALETA.oroClaro;
     c.fillText(r.nombre, ix, cy);
     cy += 26;
+    c.font = '14px ' + FUENTE.interfaz;
+    c.fillStyle = PALETA.oro;
+    c.fillText(r.equivale, ix, cy);
+    cy += 22;
 
     for (const l of LECTURAS) {
       const v = r[l.clave];

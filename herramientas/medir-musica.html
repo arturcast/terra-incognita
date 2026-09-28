@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Medir música</title>
+<!--
+  medir-musica.html — Mide cada canción de assets/musica/: duración, volumen
+  medio (RMS en dB) y silencio al principio. Sirve para ajustar el volumen de
+  cada una en src/core/audio.js (TEMAS) y que todas suenen parejas.
+  Uso: http://localhost:8740/herramientas/medir-musica.html
+  Herramienta de desarrollo: no forma parte del juego.
+-->
+</head>
+<body>
+<pre id="salida">midiendo…</pre>
+<script type="module">
+const ARCHIVOS = ['tema', 'mapa', 'camino', 'regreso'];
+const salida = document.getElementById('salida');
+const filas = [];
+const ctx = new OfflineAudioContext(2, 44100, 44100);
+for (const nombre of ARCHIVOS) {
+  try {
+    salida.textContent = filas.concat('decodificando ' + nombre).join('\n');
+    const r = await fetch('../assets/musica/' + nombre + '.mp3');
+    const buf = await ctx.decodeAudioData(await r.arrayBuffer());
+    let suma = 0, n = 0, primero = -1;
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < d.length; i++) {
+        suma += d[i] * d[i];
+        if (primero < 0 && Math.abs(d[i]) > 0.01) primero = i;
+      }
+      n += d.length;
+    }
+    const db = 10 * Math.log10(suma / n);
+    filas.push(nombre + '\t' + buf.duration.toFixed(2) + ' s\tRMS ' + db.toFixed(1) +
+      ' dB\tsilencio inicial ' + (primero / buf.sampleRate).toFixed(2) + ' s');
+  } catch (e) {
+    filas.push(nombre + '\tERROR ' + e.message);
+  }
+}
+salida.textContent = filas.concat('LISTO').join('\n');
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { VUELO, generarCielo, Vuelo, ganadorVuelo, FIN_AL_CHOCAR } from '../src/juego/vuelo.js';
+import { VUELO, generarCielo, Vuelo, ganadorVuelo, FIN_AL_CHOCAR, EXCUSAS_REGRESO } from '../src/juego/vuelo.js';
 
 const DT = 1 / 60;
 
@@ -183,4 +183,29 @@ test('gana quien más puntos hace; desempatan las entregas y los choques', () =>
   assert.equal(ganadorVuelo([base, { ...base, choques: 0 }]), 1);
   assert.equal(ganadorVuelo([base, { ...base }]), -1, 'empate perfecto');
   assert.equal(ganadorVuelo([base]), 0);
+});
+
+test('las excusas de las columnas nunca se repiten una después de otra', () => {
+  for (let semilla = 1; semilla <= 200; semilla++) {
+    const { columnas } = generarCielo(semilla);
+    for (let i = 1; i < columnas.length; i++) {
+      assert.notEqual(columnas[i].texto, columnas[i - 1].texto, 'semilla ' + semilla + ', columna ' + i);
+    }
+  }
+});
+
+test('salen todas las excusas antes de que vuelva una', () => {
+  const { columnas } = generarCielo(7);
+  const n = EXCUSAS_REGRESO.length;
+  assert.ok(columnas.length >= n, 'el vuelo tiene columnas para mostrarlas todas');
+  assert.equal(new Set(columnas.slice(0, n).map((c) => c.texto)).size, n);
+});
+
+test('las excusas se leen al pasar y no nombran el oficio', () => {
+  const vetadas = /auditor|hallazgo|riesgo residual|control interno|plan anual|informe/i;
+  assert.equal(new Set(EXCUSAS_REGRESO).size, EXCUSAS_REGRESO.length, 'sin frases repetidas en la lista');
+  for (const e of EXCUSAS_REGRESO) {
+    assert.ok(!vetadas.test(e), e);
+    assert.ok(e.length <= 32, 'demasiado larga para el cartel: ' + e);
+  }
 });

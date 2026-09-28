@@ -68,6 +68,8 @@ export class EscenaCamino extends Escena {
     super(motor);
     /** Video previo a las instrucciones: assets/cinematicas/camino.mp4 (opcional). */
     this.cinematica = 'camino';
+    /** Su canción (TEMAS en audio.js). */
+    this.tema = 'camino';
     this.punteros = motor.jugadores.map((j) => new Puntero(j));
     this.acciones = motor.jugadores.map((j) => new Acciones(j));
 

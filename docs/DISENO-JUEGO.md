@@ -214,7 +214,7 @@ recorrido.
 | En el vuelo | Qué es |
 |---|---|
 | Lo traído de El Camino | Cada hallazgo de la Etapa 2 abre el paso entre columnas y hace valer más cada entrega (hasta el doble). No hay límite de entregas: cada aro suma hasta el final |
-| Columnas con texto | Las excusas del seguimiento: *«Ya está resuelto»*, *«No hubo presupuesto»*, *«Cambió el responsable»*, *«Lo vemos el otro trimestre»* |
+| Columnas con texto | Las excusas del seguimiento: *«Ya está resuelto»*, *«No hubo presupuesto»*, *«Cambió el responsable»*, *«Lo vemos el otro trimestre»*… 22 en total (`EXCUSAS_REGRESO` en `vuelo.js`), barajadas para que dos seguidas nunca se repitan |
 | Aros dorados | Recomendaciones y planes de acción: atravesarlos los entrega |
 | Puestos de control | Seguimiento: pasar por ellos verifica que el plan se cumplió |
 

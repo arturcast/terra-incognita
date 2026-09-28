@@ -33,7 +33,7 @@ import { generarCosta, generarIsla, REGIONES } from '../../datos/territorio.js';
 export const PARADAS = [
   { id: 'mapa', n: '1', titulo: 'El Mapa', que: 'Elige a dónde ir', quienes: '1 jugador' },
   { id: 'camino', n: '2', titulo: 'El Camino', que: 'Encuentra lo que está escondido', quienes: '1 o 2 jugadores' },
-  { id: 'regreso', n: '3', titulo: 'El Regreso', que: 'Llévalo de vuelta y verifica', quienes: '1 o 2 jugadores' },
+  { id: 'regreso', n: '3', titulo: 'El Tesoro', que: 'El valor aparece cuando lo encontrado se convierte en mejora', quienes: '1 o 2 jugadores' },
 ];
 
 /**

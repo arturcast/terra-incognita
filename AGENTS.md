@@ -14,7 +14,7 @@ trabaje sobre este repositorio. Léelo completo antes de la primera edición.
    lo que sigue en orden (fichas con criterio de aceptación), decisiones
    pendientes del usuario (D1-D3) e historial de decisiones.
 2. Lee este archivo completo: las reglas no se negocian.
-3. Corre la batería de pruebas (§6). Debe dar 158 pass, 0 fail, 8 skipped
+3. Corre la batería de pruebas (§6). Debe dar 166 pass, 0 fail, 8 skipped
    antes de que toques nada.
 4. Construye **una** ficha a la vez, en el orden del plan, y actualiza su
    estado en el plan al terminar. No marques «hecho» lo que el usuario no
@@ -52,6 +52,18 @@ trabajamos») y la escena `cierre.js`: ahí nombrar el oficio es el objetivo.
 Mientras se juega —instrucciones, HUD, avisos, tablero— está mal. En El
 Camino se juega con «algo escondido» y «descubrimientos»; «hallazgo» solo
 aparece en la revelación.
+
+**Dos excepciones decididas por el usuario, sabiendo que adelantan la
+revelación:** el subtítulo de la portada («Una expedición por las tierras de
+AUDITORÍA», 2026-09-25) y **el proceso real debajo de cada lugar en El Mapa**
+(etiqueta y ficha: «Los Ramales · Construcciones e Ingeniería»,
+2026-09-27), para que el visitante sepa desde el principio qué elige. No las
+extiendas a otras pantallas sin preguntar.
+
+La tercera etapa se llama **El Tesoro** (antes «El Regreso», cambio del
+2026-09-27). En el código sigue llamándose `regreso` (archivos, escena,
+videos, puntajes): el nombre interno no se ve y cambiarlo rompería más de lo
+que arregla.
 
 **Traducción obligatoria:**
 
@@ -237,7 +249,7 @@ python servidor.py   # sin caché; ver servidor.py
 dependencias. Ver [`docs/ESTABILIDAD.md`](docs/ESTABILIDAD.md).
 
 ```bash
-node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js
+node --test tests/entrada.test.js tests/captura.test.js tests/multijugador.test.js tests/camino.test.js tests/regreso.test.js tests/camino3d.test.js tests/humo.test.js tests/joycon-flujo.test.js tests/musica.test.js
 ```
 
 `camino.test.js` vigila el equilibrio de El Camino (jugar en el centro sin

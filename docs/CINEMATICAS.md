@@ -11,6 +11,7 @@ estilo cómic y **Gemini / Google Flow (Veo)** anima entre uno y otro.
 | `camino.mp4` | Antes de la Etapa 2 | No basta con el manual: hay que ir a los datos y mirar lo escondido |
 | `regreso.mp4` | Antes de la Etapa 3 | Lo encontrado sirve para corregir, y eso deja el camino más fácil |
 | `final.mp4` | Al terminar la Etapa 3, antes del recuento | La auditoría deja las cosas mejor que como estaban (aquí ya directo) |
+| `final2.mp4` | Pegado a `final.mp4`, sin corte (2026-09-27) | Continuación del final: con él termina la historia |
 
 Van en `assets/cinematicas/`. MP4 (H.264), 1920×1080, **máximo 15 s**. Si falta
 uno, el juego sigue sin él. Mientras suena, la música del juego se baja sola.

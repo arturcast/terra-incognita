@@ -68,7 +68,11 @@ export const VUELO = {
   bonoMax: 1,
 };
 
-/** Lo que dicen las columnas. Son las excusas del seguimiento, no las de la visita. */
+/**
+ * Lo que dicen las columnas. Son las excusas del seguimiento, no las de la
+ * visita: lo que se oye cuando se vuelve a preguntar si ya se arregló.
+ * Cortas, para que el cartel se lea al pasar volando.
+ */
 export const EXCUSAS_REGRESO = [
   'Ya está resuelto',
   'No hubo presupuesto',
@@ -76,7 +80,46 @@ export const EXCUSAS_REGRESO = [
   'Lo vemos el otro trimestre',
   'Estamos en cierre de mes',
   'Eso ya lo sabíamos',
+  'Eso no es de mi área',
+  'Siempre se ha hecho así',
+  'El sistema no deja',
+  'Ya casi, falta una firma',
+  'Lo tiene el proveedor',
+  'Mándame un correo',
+  'No me llegó el correo',
+  'Después de vacaciones',
+  'La otra semana sin falta',
+  'Estamos en otra prioridad',
+  'Eso lo maneja otra gerencia',
+  'Nadie me avisó',
+  'Está en trámite',
+  'El que sabía se fue',
+  'Lo hablamos en el comité',
+  'Eso fue antes de que yo llegara',
 ];
+
+/**
+ * Reparte las excusas como un mazo barajado: no se repite ninguna hasta que
+ * salen todas, y al volver a barajar la primera nunca es la misma que la
+ * última. Así dos columnas seguidas jamás dicen lo mismo.
+ */
+function repartirExcusas(rnd) {
+  let mazo = [];
+  let anterior = null;
+  return () => {
+    if (!mazo.length) {
+      mazo = EXCUSAS_REGRESO.slice();
+      for (let i = mazo.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [mazo[i], mazo[j]] = [mazo[j], mazo[i]];
+      }
+      // Se saca por el final: la que sale primero no puede repetir la última.
+      if (mazo[mazo.length - 1] === anterior) [mazo[0], mazo[mazo.length - 1]] = [mazo[mazo.length - 1], mazo[0]];
+    }
+    anterior = mazo.pop();
+    return anterior;
+  };
+}
 
 /** Azar reproducible: el mismo número da el mismo cielo. */
 export function azar(semilla) {
@@ -99,6 +142,8 @@ export function azar(semilla) {
  */
 export function generarCielo(semilla) {
   const rnd = azar(semilla);
+  // Las excusas llevan su propio azar: así cambiarlas no mueve las columnas.
+  const excusa = repartirExcusas(azar(semilla ^ 0x5bd1e995));
   const columnas = [];
   const puestos = [];
 
@@ -117,7 +162,7 @@ export function generarCielo(semilla) {
       x: x0 + i * VUELO.separacion,
       y,                                   // centro del paso
       aro: i > 1 && rnd() < VUELO.probAro, // las dos primeras, limpias
-      texto: EXCUSAS_REGRESO[Math.floor(rnd() * EXCUSAS_REGRESO.length)],
+      texto: excusa(),
     });
   }
 

@@ -108,7 +108,7 @@ export class EscenaIntro extends Escena {
     this.menu.mostrar([
       { texto: '1 · El Mapa', accion: () => this._elegirJugadores('mapa') },
       { texto: '2 · El Camino', accion: () => this._elegirJugadores('camino') },
-      { texto: '3 · El Regreso', accion: () => this._elegirJugadores('regreso') },
+      { texto: '3 · El Tesoro', accion: () => this._elegirJugadores('regreso') },
       { texto: '‹ Volver', accion: () => this._principal() },
     ], [], 'Elige una etapa');
   }
@@ -175,8 +175,8 @@ export class EscenaIntro extends Escena {
     tituloMenu(c, 'INCÓGNITA', cx, yTitulo + tam * 0.95, tam * 0.8);
 
     let y = yTitulo + tam * 1.5;
-    // Subtítulo: una línea de presentación y, debajo, AUDITORÍA con la misma
-    // letra de fuego del título, para que se lea desde lejos.
+    // Subtítulo: una línea de presentación y, debajo, AUDITORÍA en arenisca
+    // dorada, más pequeña que el título (revisión de textos, 2026-09-27).
     const tamSub = Math.round(Math.min(40, Math.max(22, tam * 0.32)));
     c.textBaseline = 'top';
     c.font = 'bold ' + tamSub + 'px ' + MENU.letra;
@@ -187,7 +187,7 @@ export class EscenaIntro extends Escena {
     c.fillStyle = '#fff3cf';
     c.fillText(SUBTITULO[0], cx, y);
     y += tamSub * 1.2;
-    const tamAud = Math.round(tam * 0.62);
+    const tamAud = Math.round(tam * 0.46);
     // Otra textura que la del título: arenisca dorada tallada, no fuego.
     tituloMenu(c, SUBTITULO[1], cx, y + tamAud * 0.55, tamAud, 'piedra');
     y += tamAud * 1.25;

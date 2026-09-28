@@ -7,6 +7,8 @@ Pon aquí los videos con estos nombres exactos:
   camino.mp4    antes de la Etapa 2, El Camino
   regreso.mp4   antes de la Etapa 3, El camino despejado
   final.mp4     al terminar la Etapa 3, antes del recuento de puntos
+  final2.mp4    continuación de final.mp4: va pegado a él, sin corte, y con él
+                termina la historia
 
 Formato: MP4 (H.264), 1920x1080 (16:9), máximo 15 segundos cada uno.
 Chrome los reproduce sin instalar nada. Mientras suena un video, la música

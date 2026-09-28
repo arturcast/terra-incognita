@@ -23,8 +23,8 @@ import { REGIONES } from '../../datos/territorio.js';
 
 export const ETAPAS = [
   { n: '1', titulo: 'El Mapa', capacidad: 'Mirar todo y elegir a dónde ir', equivale: 'Plan Anual de Auditoría', estado: 'listo' },
-  { n: '2', titulo: 'El Camino', capacidad: 'Ir a la fuente y encontrar lo escondido', equivale: 'Ejecución con analítica de datos', estado: 'listo' },
-  { n: '3', titulo: 'El Regreso', capacidad: 'Contarlo, y volver a ver que cambió', equivale: 'Informe, recomendaciones y seguimiento', estado: 'listo' },
+  { n: '2', titulo: 'El Camino', capacidad: 'Ir a la fuente y encontrar lo escondido', equivale: 'Ejecución de auditoría basada en análisis de datos', estado: 'listo' },
+  { n: '3', titulo: 'El Tesoro', capacidad: 'El valor aparece cuando lo encontrado se convierte en mejora', equivale: 'Recomendaciones, acciones y seguimiento para mejorar el proceso', estado: 'listo' },
 ];
 
 const ORO = '#f0c977';
@@ -124,7 +124,7 @@ export class EscenaCierre extends Escena {
       c.font = 'italic ' + Math.round(25 * s) + 'px ' + FUENTE.narrativa;
       l1 = partirLineas(c, 'Primero miraste todo el territorio y decidiste a dónde ir. Después fuiste a ' +
         'la fuente, recorriste el proceso de principio a fin y encontraste lo que nadie estaba viendo. ' +
-        'Al final lo llevaste de vuelta y verificaste que cambiara.', ancho);
+        'Al final, implementaste acciones que hicieron que mejorara el proceso y sus resultados.', ancho);
       c.font = Math.round(21 * s) + 'px ' + FUENTE.interfaz;
       l3 = partirLineas(c, 'No nos limitamos a probar los controles ni a seguir el manual: entendemos el ' +
         'proceso completo para encontrar lo invisible. Así es como generamos valor.', ancho);
@@ -191,9 +191,9 @@ export class EscenaCierre extends Escena {
     const encontro = this.r && this.r.islaDescubierta;
     const isla = REGIONES.find((r) => r.id === 'isla');
     const cuerpo = encontro
-      ? 'La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, y justamente por eso suele revisarse menos que los demás.'
-      : 'Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto del territorio.';
-    const moraleja = 'Lo que una compañía no revisa porque "no es lo nuestro" suele ser justo lo que menos control tiene.';
+      ? 'La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.'
+      : 'Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.';
+    const moraleja = 'Lo diferente o esporádico también debe ser analizado y revisado, porque también puede tener importancia y un impacto relevante para la compañía.';
 
     let s = this._s, ancho, l1, l2, alto;
     for (let intento = 0; intento < 8; intento++) {
@@ -259,7 +259,16 @@ export class EscenaCierre extends Escena {
     const porFila = enFila ? ETAPAS.length : 1;
     const sep = 20 * s;
     const wTar = enFila ? (anchoTotal - sep * (porFila - 1)) / porFila : Math.min(560 * s, W - 60);
-    const hTar = 230 * s;
+    // La altura sale del texto más largo: los lemas cambian con la revisión
+    // de textos y una tarjeta fija los dejaba montados sobre «YA SE JUEGA».
+    const lineasDe = (fuente, texto) => {
+      c.font = fuente;
+      return partirLineas(c, texto, wTar - 36 * s).length;
+    };
+    const maxLineas = Math.max(...ETAPAS.map((e) =>
+      lineasDe(Math.round(19 * s) + 'px ' + FUENTE.interfaz, e.capacidad) +
+      lineasDe('bold ' + Math.round(19 * s) + 'px ' + MENU.letra, e.equivale)));
+    const hTar = Math.max(230 * s, (20 + 30 + 56 + 6 + 40) * s + maxLineas * 25 * s);
     const x0 = cx - (enFila ? anchoTotal : wTar) / 2;
 
     ETAPAS.forEach((e, i) => {
@@ -299,6 +308,13 @@ export class EscenaCierre extends Escena {
     y += (enFila ? 1 : ETAPAS.length) * (hTar + sep) + 26 * s;
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    cursiva(c, 'Esto es lo que hacemos. Todos los años, en toda la compañía.', cx, y, Math.round(26 * s), ORO);
+    const tamFinal = Math.round(26 * s);
+    c.font = 'italic ' + tamFinal + 'px ' + FUENTE.narrativa;
+    partirLineas(c, 'Esto es lo que hacemos. Identificar lo relevante, revisar, asegurar el cumplimiento ' +
+      'e identificar mejoras que le permitan a la compañía alcanzar sus objetivos y hacer las cosas ' +
+      'cada vez mejor.', anchoTotal).forEach((l) => {
+      cursiva(c, l, cx, y, tamFinal, ORO);
+      y += 36 * s;
+    });
   }
 }

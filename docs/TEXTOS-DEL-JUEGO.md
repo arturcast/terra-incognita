@@ -21,7 +21,7 @@ así sé dónde va cada cambio. Si quieres quitar una línea, escribe `(quitar)`
 ## 1. Pantalla de conexión (antes de entrar)
 
 - `[G-01]` Título: TERRA INCÓGNITA
-- `[G-02]` Subtítulo: Una expedición por las tierras de auditoría
+- `[G-02]` Subtítulo: Una expedición por las tierras de AUDITORÍA
 - `[G-03]` Conecta los Joy-Con para jugar con el movimiento: cada jugador usa uno, de cualquier lado, sostenido como una linterna. Dentro del juego, cada uno vincula el suyo. Si un mando falla, se puede jugar con el teclado o el ratón.
 - `[G-04]` Botón: ＋ Conectar un Joy-Con  /  con alguno ya conectado: ＋ Conectar otro Joy-Con
 - `[G-05]` Botón: Jugar con ratón o teclado
@@ -59,7 +59,7 @@ Mensajes si algo falla (los ve el operador):
 - `[P-13]` Encabezado: Elige una etapa
 - `[P-14]` 1 · El Mapa
 - `[P-15]` 2 · El Camino
-- `[P-16]` 3 · El Regreso
+- `[P-16]` 3 · El Tesoro
 - `[P-17]` ‹ Volver
 
 **Mejores puntajes**
@@ -78,7 +78,7 @@ Mensajes si algo falla (los ve el operador):
 **El modo**
 - `[J-01]` Título: La expedición
 - `[J-02]` Encabezado: ¿Cuántos juegan?
-- `[J-03]` El Mapa lo juega el Jugador 1. El Camino y El Regreso, los que elijan aquí.
+- `[J-03]` El Mapa lo juega el Jugador 1. El Camino y El Tesoro, los que elijan aquí.
 - `[J-04]` Cada jugador usa un Joy-Con (o el teclado).
 - `[J-05]` Un jugador
 - `[J-06]` Dos jugadores
@@ -114,11 +114,11 @@ Mensajes si algo falla (los ve el operador):
 - `[R-04]` Al terminar las tres: Recorriste los tres tramos.
 - `[R-05]` Parada 1: El Mapa — Elige a dónde ir — 1 jugador
 - `[R-06]` Parada 2: El Camino — Encuentra lo que está escondido — 1 o 2 jugadores
-- `[R-07]` ⚠ Parada 3: El Regreso — Llévalo de vuelta y verifica — 1 o 2 jugadores
+- `[R-07]` Parada 3: El Tesoro — El valor aparece cuando lo encontrado se convierte en mejora — 1 o 2 jugadores
   *(la historia nueva del nivel 3 es «el camino despejado»; propuesta: «Recorre el camino que abriste»)*
 - `[R-08]` Resumen El Mapa: {n} equipos enviados · viste el {n} % del mapa
 - `[R-09]` Resumen El Camino: {n} de {n} descubrimientos (con dos: J1: {n} · J2: {n} de {n} descubrimientos)
-- `[R-10]` ⚠ Resumen El Regreso: {n} entregados  *(ahora se llaman «aros»)*
+- `[R-10]` ⚠ Resumen El Tesoro: {n} entregados  *(ahora se llaman «aros»)*
 - `[R-11]` Marca sobre la parada siguiente: AHORA / PRÓXIMAMENTE
 - `[R-12]` Pie: Pulsa {botón} para entrar ya / Pulsa {botón} para continuar
 
@@ -162,7 +162,7 @@ Mensajes si algo falla (los ve el operador):
 ### Mientras decide
 - `[M-30]` Marcador: Equipos enviados {n} / 5
 - `[M-31]` Cuadro: CÓMO SE LEE — Riesgo / Importancia / Señales
-- `[M-32]` Ficha del lugar: {nombre}, sus tres barras con una palabra (muy alto · alto · medio · bajo · muy bajo) y su pista (sección 6)
+- `[M-32]` Ficha del lugar: {nombre}, debajo el proceso real («es», sección 6), sus tres barras con una palabra (muy alto · alto · medio · bajo · muy bajo) y su pista (sección 6)
 - `[M-33]` En la ficha, si ya mandó a alguien: EQUIPO {n} ENVIADO AQUÍ
 - `[M-34]` Botón: Enviar {n} equipo / Enviar {n} equipos
 - `[M-35]` Aviso al enviar: Equipo {n} enviado
@@ -204,9 +204,9 @@ Mensajes si algo falla (los ve el operador):
 - `[M-65]` **Las tres barras** — Riesgo, importancia y señales. Con eso se decide, y los datos son solo una de las tres: un proceso puede estar en peligro sin que nada lo esté gritando.
 - `[M-66]` **Los cinco equipos** — Las auditorías que caben en el año. Escoger a dónde van es decir que no a los otros nueve, y hay que poder sustentarlo.
 - `[M-67]` **El orden** — La prioridad. No es lo mismo llegar en enero que en noviembre: a lo más crítico se va primero.
-- `[M-68]` **Lo que se te escapó** — También nos pasa. Por eso el plan se revisa: si aparece algo nuevo a mitad de año, se cambia.
+- `[M-68]` **Lo que se te escapó** — También nos pasa. Por eso los riesgos se vigilan de forma permanente: si aparece algo relevante, el plan se ajusta en ese momento, sin esperar.
 - `[M-69]` Eso es el Plan Anual de Auditoría.
-- `[M-70]` Es la decisión más importante del año del área: define qué se revisa, en qué orden y qué queda por fuera. Se sustenta ante la Dirección, y de ahí sale el trabajo de los doce meses.
+- `[M-70]` Es la decisión más importante del año del área: define qué se revisa, en qué orden y qué queda por fuera. Se sustenta ante la Dirección y ante el Comité de Auditoría y Riesgos. Y no es fijo: los riesgos de la compañía se vigilan todo el tiempo, y si durante el año surge algo relevante, el plan se ajusta y cambian el enfoque o las prioridades.
 - `[M-71]` Pulsa {botón} para seguir el recorrido
 
 ## 6. Los catorce lugares del mapa
@@ -295,7 +295,7 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - pista: Brilla a lo lejos, separada de todo. No se parece en nada al resto del territorio.
 - qué se revisa: Cómo se otorgan los créditos, cómo se recuperan, y quién responde cuando no se pagan.
 - verdad (sale en su página de resultados): Está lejos de tierra firme y no se parece a nada del resto del mapa. Casi nadie llega hasta acá — y sin embargo se mueve mucho dinero.
-- por qué importa (sale en su página de resultados): Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. No se parece al resto y por eso se revisa poco. Pero mueve plata de verdad y tiene sus propios riesgos. Lo que una compañía no mira porque "no es lo nuestro" suele ser justo lo que menos control tiene.
+- por qué importa (sale en su página de resultados): Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. No se parece al resto: tiene retos y riesgos distintos, y mueve plata de verdad. Lo diferente o esporádico también hay que mirarlo, porque puede pesar mucho para la compañía.
 
 ## 7. Etapa 2 · El Camino
 
@@ -369,12 +369,12 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - `[C-57]` Cierre: No nos quedamos con lo que el proceso dice de sí mismo. Vamos a ver.
 - `[C-58]` Pulsa {botón} para continuar
 
-## 8. Etapa 3 · El Regreso («El camino despejado»)
+## 8. Etapa 3 · El Tesoro («El camino despejado»)
 
 ### Instrucciones
-- `[V-01]` Etapa 3 · El Regreso
+- `[V-01]` Etapa 3 · El Tesoro
 - `[V-02]` El camino despejado
-- `[V-03]` Lo que encontraste no se quedó guardado: sirvió para arreglar lo que estaba mal. Ahora el regreso es más fácil, y mientras más encontraste, más despejado está.
+- `[V-03]` Lo que encontraste no se quedó guardado: sirvió para arreglar lo que estaba mal. Ahora el camino hacia el tesoro es más fácil, y mientras más encontraste, más despejado está.
 - `[V-04]` Pulsa el gatillo para batir las alas. Nada más. Con teclado: Jugador 1 con W o Espacio; Jugador 2 con la flecha ↑.
 - `[V-05]` Atraviesa los aros dorados: cada uno es una mejora que ya funciona y suma puntos, hasta el último segundo.
 - `[V-06]` Pasa por los puestos de control: son la vuelta a verificar que sí cambió.
@@ -384,12 +384,29 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - `[V-10]` Jugador 1: pulsa {botón} para despegar
 
 ### Las excusas en los carteles de las tuberías
+Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seguidas nunca dicen lo mismo.
 - `[V-11]` Ya está resuelto
 - `[V-12]` No hubo presupuesto
 - `[V-13]` Cambió el responsable
 - `[V-14]` Lo vemos el otro trimestre
 - `[V-15]` Estamos en cierre de mes
 - `[V-16]` Eso ya lo sabíamos
+- `[V-16a]` Eso no es de mi área
+- `[V-16b]` Siempre se ha hecho así
+- `[V-16c]` El sistema no deja
+- `[V-16d]` Ya casi, falta una firma
+- `[V-16e]` Lo tiene el proveedor
+- `[V-16f]` Mándame un correo
+- `[V-16g]` No me llegó el correo
+- `[V-16h]` Después de vacaciones
+- `[V-16i]` La otra semana sin falta
+- `[V-16j]` Estamos en otra prioridad
+- `[V-16k]` Eso lo maneja otra gerencia
+- `[V-16l]` Nadie me avisó
+- `[V-16m]` Está en trámite
+- `[V-16n]` El que sabía se fue
+- `[V-16o]` Lo hablamos en el comité
+- `[V-16p]` Eso fue antes de que yo llegara
 
 ### Mientras vuela
 - `[V-17]` Marcador: TU VUELO (o el nombre) — {n} aros — {n} puntos — ✓ {n} verificados
@@ -402,7 +419,7 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - `[V-24]` Al empezar: Pulsa {botón} para aletear
 
 ### Tablero
-- `[V-25]` Tu regreso
+- `[V-25]` Tu tesoro
 - `[V-26]` T U   V U E L O  (o el nombre)
 - `[V-27]` {n} aros · {n} puntos
 - `[V-28]` ✓ {n} vez/veces volviste a verificar
@@ -427,7 +444,7 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 ## 9. Recuento de puntos
 
 - `[F-01]` Título: Cómo te fue  /  con dos: Cómo le fue a cada uno
-- `[F-02]` Filas: El Mapa · El Camino · El Regreso · TOTAL
+- `[F-02]` Filas: El Mapa · El Camino · El Tesoro · TOTAL
 - `[F-03]` Frase según el total: Leyenda del territorio (5000+) · Gran explorador (3000+) · Buena expedición (1500+) · Primera expedición
 - `[F-04]` Con dos: ¡Gana {nombre}! / Gana el Jugador {n} / ¡Empate!
 - `[F-05]` Pie: Pulsa el gatillo, Espacio o Enter para ver la tabla de los mejores  (o «para poner tu nombre» si no lo puso al empezar)
@@ -439,20 +456,20 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 ## 10. Cierre (tres páginas)
 
 **Página 1**
-- `[F-10]` ⚠ Primero miraste todo el territorio y decidiste a dónde ir. Después fuiste a la fuente, recorriste el proceso de principio a fin y encontraste lo que nadie estaba viendo. Al final lo llevaste de vuelta y verificaste que cambiara.
+- `[F-10]` Primero miraste todo el territorio y decidiste a dónde ir. Después fuiste a la fuente, recorriste el proceso de principio a fin y encontraste lo que nadie estaba viendo. Al final, implementaste acciones que hicieron que mejorara el proceso y sus resultados.
   *(la última frase es de la historia anterior; propuesta: «Al final, lo que encontraste sirvió para corregir, y el camino quedó más fácil para todos.»)*
 - `[F-11]` Eso es Auditoría Interna.
 - `[F-12]` El Mapa → Plan Anual de Auditoría
-- `[F-13]` El Camino → Ejecución con analítica de datos
-- `[F-14]` ⚠ El Regreso → Informe, recomendaciones y seguimiento  *(propuesta: «Recomendaciones, planes de acción y seguimiento»)*
+- `[F-13]` El Camino → Ejecución de auditoría basada en análisis de datos
+- `[F-14]` El Tesoro → Recomendaciones, acciones y seguimiento para mejorar el proceso
 - `[F-15]` No nos limitamos a probar los controles ni a seguir el manual: entendemos el proceso completo para encontrar lo invisible. Así es como generamos valor.
 
 **Página 2 (la isla)**
 - `[F-16]` Encabezado si la encontró: Y LLEGASTE HASTA ALLÁ  /  si no: Y HABÍA UN LUGAR MÁS
 - `[F-17]` La Isla Brillante — era Brilla — financiación no bancaria
-- `[F-18]` Si la encontró: La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, y justamente por eso suele revisarse menos que los demás.
-- `[F-19]` Si no: Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto del territorio.
-- `[F-20]` Lo que una compañía no revisa porque "no es lo nuestro" suele ser justo lo que menos control tiene.
+- `[F-18]` Si la encontró: La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.
+- `[F-19]` Si no: Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.
+- `[F-20]` Lo diferente o esporádico también debe ser analizado y revisado, porque también puede tener importancia y un impacto relevante para la compañía.
 
 **Página 3**
 - `[F-21]` El recorrido completo
@@ -460,8 +477,8 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - `[F-23]` Tarjetas: E T A P A {n} — {nombre} — {qué hiciste} — {qué es} — YA SE JUEGA / EN DISEÑO
 - `[F-24]` El Mapa — Mirar todo y elegir a dónde ir
 - `[F-25]` El Camino — Ir a la fuente y encontrar lo escondido
-- `[F-26]` ⚠ El Regreso — Contarlo, y volver a ver que cambió  *(propuesta: «Corregir lo encontrado y verificar que cambió»)*
-- `[F-27]` Esto es lo que hacemos. Todos los años, en toda la compañía.
+- `[F-26]` El Tesoro — El valor aparece cuando lo encontrado se convierte en mejora
+- `[F-27]` Esto es lo que hacemos. Identificar lo relevante, revisar, asegurar el cumplimiento e identificar mejoras que le permitan a la compañía alcanzar sus objetivos y hacer las cosas cada vez mejor.
 - `[F-28]` Pie: Pulsa {botón} para seguir / Pulsa {botón} para volver al inicio
 
 ## 11. Pausa, calibración y videos

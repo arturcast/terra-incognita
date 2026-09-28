@@ -25,7 +25,7 @@ export const MAX_NOMBRE = 10;
 export const ETAPAS_RECUENTO = [
   { id: 'mapa', nombre: 'El Mapa' },
   { id: 'camino', nombre: 'El Camino' },
-  { id: 'regreso', nombre: 'El Regreso' },
+  { id: 'regreso', nombre: 'El Tesoro' },
 ];
 
 /** Lo que alcanzó cada jugador en cada etapa. null = no jugó esa etapa. */

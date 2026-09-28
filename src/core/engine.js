@@ -102,8 +102,9 @@ export class Motor {
 
   /**
    * Cambia de escena con fundido. Ignora llamadas durante una transición.
-   * @param {{cinematica?: string}} [opciones] un video a ver antes de esta
-   *   escena en lugar del suyo (p. ej. «inicio» antes del recorrido).
+   * @param {{cinematica?: string|string[]}} [opciones] un video (o varios
+   *   seguidos) a ver antes de esta escena en lugar del suyo (p. ej. «inicio»
+   *   antes del recorrido).
    */
   async ir(nombre, datos = null, opciones = {}) {
     if (this._transicionando) return;
@@ -119,13 +120,19 @@ export class Motor {
     // Video de la etapa, si la escena tiene uno y el archivo existe. Se ve con
     // la pantalla en negro detrás; mientras dura, el reproductor hace de
     // escena para que el gatillo lo pueda saltar.
-    const video = opciones.cinematica || siguiente.cinematica;
-    if (video && this.cinematicas) {
+    // Cada etapa tiene su canción; el resto de pantallas, la principal. Se
+    // elige antes del video para que, al terminar, ya suene la de la etapa.
+    if (this.audio && this.audio.elegirTema) this.audio.elegirTema(siguiente.tema);
+    // Puede ser un nombre o una lista de videos que van seguidos, sin corte.
+    const videos = [].concat(opciones.cinematica || siguiente.cinematica || []);
+    if (videos.length && this.cinematicas) {
       this.escena = this.cinematicas;
       this._fundido = 1;
       // El video trae su sonido: la música del juego se aparta mientras dura.
       if (this.audio && this.audio.atenuarMusica) this.audio.atenuarMusica(true);
-      await this.cinematicas.reproducir(video);
+      for (let i = 0; i < videos.length; i++) {
+        await this.cinematicas.reproducir(videos[i], { hayOtro: i < videos.length - 1 });
+      }
       if (this.audio && this.audio.atenuarMusica) this.audio.atenuarMusica(false);
     }
     this.escena = siguiente;
