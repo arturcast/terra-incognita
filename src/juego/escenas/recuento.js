@@ -71,7 +71,7 @@ export class EscenaRecuento extends Escena {
     const previos = this.motor.expedicion.nombres || [];
     this.conNombres = this.r.jugadores.every((_, k) => !!previos[k]);
     if (this.conNombres) this.editores.forEach((e, k) => { e.letras = previos[k].split(''); });
-    this.puestos = [];
+    this.filasNuevas = [];       // la fila de cada jugador en la tabla
     this.turno = 0;              // quién escribe su nombre
     this._estadoMandos = { espera: 0 };
     this._teclas = [];
@@ -147,8 +147,16 @@ export class EscenaRecuento extends Escena {
   /** Anota en la tabla al jugador `k` con su nombre. */
   _anotar(k) {
     const j = this.r.jugadores[k];
-    this.puestos[k] = this.tabla.anotar(this.editores[k].texto, j.total, j.porEtapa);
+    this.tabla.anotar(this.editores[k].texto, j.total, j.porEtapa);
+    this.filasNuevas[k] = this.tabla.ultimaFila;
   }
+
+  /**
+   * El puesto de cada jugador, mirado en la tabla cada vez: si el Jugador 2
+   * entra por encima del 1, el 1 baja un puesto (antes se quedaba con el
+   * puesto que tenía al anotarse).
+   */
+  get puestos() { return this.filasNuevas.map((f) => this.tabla.puestoDe(f)); }
 
   _terminarNombre() {
     this._anotar(this.turno);
@@ -295,7 +303,7 @@ export class EscenaRecuento extends Escena {
       c.font = 'bold ' + Math.round(24 * s) + 'px ' + MENU.letra;
       c.fillStyle = COLOR_J[k];
       const p = this.puestos[k];
-      c.fillText(nombre + ': ' + (p === 1 ? '¡el mejor puntaje del stand!' : 'puesto ' + p), cx, yP);
+      c.fillText(nombre + ': ' + (p === 1 ? '¡el mejor puntaje del stand!' : p > 0 ? 'puesto ' + p : 'fuera de la tabla'), cx, yP);
       yP += 34 * s;
     });
 

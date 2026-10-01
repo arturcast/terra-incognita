@@ -134,8 +134,9 @@ cada nombre se explica solo en cuanto lo dices.
 
 ### El segundo momento importante: La Isla Brillante
 
-Casi nadie la encuentra. El juego le dedica una pantalla al final, y ahí es
-donde el equipo remata en voz alta:
+Casi nadie la encuentra. El juego le dedica una pantalla al final de El Mapa,
+justo antes de «Así elegimos» (cambia según la haya encontrado o no), y ahí
+es donde el equipo remata en voz alta:
 
 > «¿Viste esa isla allá arriba, separada de todo? La Isla Brillante. Casi
 > nadie la encuentra, porque para verla hay que salirse del mapa. Esa era

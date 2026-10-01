@@ -187,12 +187,16 @@ Mensajes si algo falla (los ve el operador):
 - `[M-50]` PRIORIZASTE — y los pusiste en el orden correcto
 - `[M-51]` POR QUÉ
 - `[M-52]` A dónde enviaste tus equipos
-- `[M-53]` Cada lugar: buena elección / no era de las más urgentes
+- `[M-53]` Cada lugar: {n}. {lugar} · {proceso real} — buena elección / no era de las más urgentes  *(proceso al lado: 2026-09-30)*
 - `[M-54]` Si no envió ninguno: No enviaste ningún equipo.
-- `[M-55]` SE TE ESCAPÓ — {lugar} — y su «por qué importa» (sección 6)
+- `[M-55]` SE TE ESCAPÓ — {lugar} · {proceso real} — y su «por qué importa» (sección 6)
 - `[M-56]` Si no se le escapó nada: No se te escapó ninguno de los importantes.
 - `[M-57]` Miraste lo suficiente y elegiste bien. Eso es exactamente lo difícil.
-- `[M-58]` Página de la isla (si no la encontró): HABÍA UN LUGAR MÁS — La Isla Brillante — y sus textos (sección 6)
+- `[M-58]` Página de la isla, **siempre**, antes de «Así elegimos» (se pasó aquí desde el cierre el 2026-09-30). Encabezado si la encontró: Y LLEGASTE HASTA ALLÁ  /  si no: HABÍA UN LUGAR MÁS — La Isla Brillante — era Brilla — financiación no bancaria
+- `[M-58a]` Si la encontró: La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.
+- `[M-58b]` Recuadro si la encontró: Lo diferente o esporádico también debe ser analizado y revisado, porque también puede tener importancia y un impacto relevante para la compañía.
+- `[M-58c]` Si no: No la encontraste. Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.
+- `[M-58d]` Recuadro si no: A veces no se identifica una situación relevante y se queda por fuera del plan. Ese es un riesgo: lo diferente o esporádico también puede tener un impacto importante para la compañía.
 - `[M-59]` Pie: Pulsa {botón} para ver por qué / Pulsa {botón} para ver qué acabas de hacer
 
 ### Así elegimos (revelación: aquí sí se nombra el oficio)
@@ -304,9 +308,10 @@ Por cada lugar: **nombre** · **es** (el área real, sale en «Tu plan» y en el
 - `[C-02]` Recorre el proceso de principio a fin
 - `[C-03]` Tus equipos llegaron. Ahora hay que caminar los dos tramos a los que diste más prioridad: {tramo 1} y {tramo 2}. Ve con tus propios ojos qué pasa ahí.
 - `[C-04]` Apunta el Joy-Con hacia un carril para moverte: izquierda, centro o derecha.
-- `[C-05]` Recoge los ◆ azules: son los datos tal como salen de la fuente.
-- `[C-06]` Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino. Lo que brille en rojo, atrápalo.
-- `[C-07]` Atrapa los tableros de Power BI: cruzan los datos por ti y analizan el camino sin gastar tus ◆. Esquiva los muros: son las excusas de siempre, y te hacen perder datos.  *(nuevo)*
+- `[C-05]` *(con el dibujo del diamante azul)* Recoge los ◆ azules: son los datos tal como salen de la fuente.
+- `[C-06]` *(con el cristal rojo)* Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino. Lo que brille en rojo, atrápalo.
+- `[C-07]` *(con el portátil de Power BI)* Atrapa los tableros de Power BI: cruzan los datos por ti y analizan el camino sin gastar tus ◆.
+- `[C-07a]` *(con la barrera)* Esquiva los muros: son las excusas de siempre, y te hacen perder datos.  *(separado de C-07 el 2026-09-30, para que cada objeto lleve su icono)*
 - `[C-08]` Con teclado: Jugador 1 con A/D y W (o Espacio); Jugador 2 con las flechas ← → y ↑. Si juegas solo, también valen las flechas.
 - `[C-09]` Aviso: Pueden jugar dos, en el mismo camino. Gana quien encuentre más de lo que estaba escondido.
 - `[C-10]` Jugador 1: pulsa {botón} para empezar
@@ -433,7 +438,7 @@ Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seg
 ### Así terminamos (revelación)
 - `[V-35]` LO QUE ACABAS DE HACER, EN LA VIDA REAL
 - `[V-36]` Así terminamos
-- `[V-37]` **Lo que encontraste** — Los HALLAZGOS. No son para buscar culpables: son lo que hay que arreglar.
+- ~~`[V-37]` **Lo que encontraste** — Los HALLAZGOS. No son para buscar culpables: son lo que hay que arreglar.~~  *(quitado el 2026-09-30: en esta etapa no aplica)*
 - `[V-38]` **El paso más ancho** — Cada hallazgo corregido deja el proceso más fácil y más seguro para todos.
 - `[V-39]` **Los aros** — Las recomendaciones que el proceso ya puso en marcha.
 - `[V-40]` **Los puestos de control** — El seguimiento: volvemos a mirar que el cambio se quedó.
@@ -444,7 +449,7 @@ Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seg
 ## 9. Recuento de puntos
 
 - `[F-01]` Título: Cómo te fue  /  con dos: Cómo le fue a cada uno
-- `[F-02]` Filas: El Mapa · El Camino · El Tesoro · TOTAL
+- `[F-02]` Filas: El Mapa · El Camino · El Tesoro · TOTAL  (con dos jugadores, El Mapa cuenta para los dos: lo deciden juntos)
 - `[F-03]` Frase según el total: Leyenda del territorio (5000+) · Gran explorador (3000+) · Buena expedición (1500+) · Primera expedición
 - `[F-04]` Con dos: ¡Gana {nombre}! / Gana el Jugador {n} / ¡Empate!
 - `[F-05]` Pie: Pulsa el gatillo, Espacio o Enter para ver la tabla de los mejores  (o «para poner tu nombre» si no lo puso al empezar)
@@ -453,7 +458,7 @@ Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seg
 - `[F-08]` {nombre}: ¡el mejor puntaje del stand!  /  {nombre}: puesto {n}
 - `[F-09]` Pie: Pulsa el gatillo, Espacio o Enter para seguir
 
-## 10. Cierre (tres páginas)
+## 10. Cierre (dos páginas; la de la isla pasó a El Mapa, ver M-58)
 
 **Página 1**
 - `[F-10]` Primero miraste todo el territorio y decidiste a dónde ir. Después fuiste a la fuente, recorriste el proceso de principio a fin y encontraste lo que nadie estaba viendo. Al final, implementaste acciones que hicieron que mejorara el proceso y sus resultados.
@@ -464,7 +469,7 @@ Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seg
 - `[F-14]` El Tesoro → Recomendaciones, acciones y seguimiento para mejorar el proceso
 - `[F-15]` No nos limitamos a probar los controles ni a seguir el manual: entendemos el proceso completo para encontrar lo invisible. Así es como generamos valor.
 
-**Página 2 (la isla)**
+**~~Página 2 (la isla)~~** *(ya no está en el cierre desde el 2026-09-30: ahora es la última página de resultados de El Mapa, M-58; quedan aquí como historial)*
 - `[F-16]` Encabezado si la encontró: Y LLEGASTE HASTA ALLÁ  /  si no: Y HABÍA UN LUGAR MÁS
 - `[F-17]` La Isla Brillante — era Brilla — financiación no bancaria
 - `[F-18]` Si la encontró: La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.
@@ -474,7 +479,7 @@ Salen barajadas: no se repite ninguna hasta que salen todas, y dos tuberías seg
 **Página 3**
 - `[F-21]` El recorrido completo
 - `[F-22]` Jugaste {n} de las 3 etapas. Así se ve el camino completo.
-- `[F-23]` Tarjetas: E T A P A {n} — {nombre} — {qué hiciste} — {qué es} — YA SE JUEGA / EN DISEÑO
+- `[F-23]` Tarjetas: E T A P A {n} — {nombre} — {qué hiciste} — {qué es}  *(sin «YA SE JUEGA» desde el 2026-09-30)*
 - `[F-24]` El Mapa — Mirar todo y elegir a dónde ir
 - `[F-25]` El Camino — Ir a la fuente y encontrar lo escondido
 - `[F-26]` El Tesoro — El valor aparece cuando lo encontrado se convierte en mejora

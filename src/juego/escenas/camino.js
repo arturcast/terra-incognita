@@ -23,6 +23,7 @@ import {
   CAMINO, generarCamino, Carrera, carrilDesdePuntero, ganador, elegirEstaciones,
 } from '../carrera.js';
 import { dibujarRevelacion } from '../../ui/revelacion.js';
+import { iconoDato, iconoEscondido, iconoPowerBI, iconoMuro } from '../../ui/iconos-camino.js';
 import { participantesDe, dibujarUnion, eleccion, nombreDe, textoGana, unirJugador2 } from '../../ui/jugadores.js';
 
 const COLOR_J = [PALETA.oro, PALETA.senal];
@@ -79,9 +80,11 @@ export class EscenaCamino extends Escena {
       entrada: 'Tus equipos llegaron. Ahora hay que caminar todo el proceso: desde donde entra el gas hasta donde llega la plata, y ver con tus propios ojos qué pasa en cada tramo.',
       pasos: [
         'Apunta el Joy-Con hacia un carril para moverte: izquierda, centro o derecha.',
-        'Recoge los ◆ azules: son los datos tal como salen de la fuente.',
-        'Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino. Lo que brille en rojo, atrápalo.',
-        'Atrapa los tableros de Power BI: cruzan los datos por ti y analizan el camino sin gastar tus ◆. Esquiva los muros: son las excusas de siempre, y te hacen perder datos.',
+        // Cada objeto del camino, con su dibujo al lado (pedido del usuario, 2026-09-30).
+        { icono: iconoDato, texto: 'Recoge los ◆ azules: son los datos tal como salen de la fuente.' },
+        { icono: iconoEscondido, texto: 'Pulsa el gatillo para ANALIZAR: gasta datos y hace visible lo que está escondido en el camino. Lo que brille en rojo, atrápalo.' },
+        { icono: iconoPowerBI, texto: 'Atrapa los tableros de Power BI: cruzan los datos por ti y analizan el camino sin gastar tus ◆.' },
+        { icono: iconoMuro, texto: 'Esquiva los muros: son las excusas de siempre, y te hacen perder datos.' },
         'Con teclado: Jugador 1 con A/D y W (o Espacio); Jugador 2 con las flechas ← → y ↑. Si juegas solo, también valen las flechas.',
       ],
       aviso: 'Pueden jugar dos, en el mismo camino. Gana quien encuentre más de lo que estaba escondido.',

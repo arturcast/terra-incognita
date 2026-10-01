@@ -55,7 +55,10 @@ export class Briefing {
    *   etiqueta   texto pequeño superior, tipo "ETAPA 1 · PARTE 1"
    *   titulo     título grande
    *   entrada    frase narrativa en cursiva
-   *   pasos      array de strings: cómo se juega
+   *   pasos      cómo se juega: array de strings, o de {texto, icono} para
+   *              poner a la izquierda el dibujo de lo que se nombra (icono:
+   *              función (c, cx, cy, tam) que lo pinta centrado en un cuadro
+   *              de lado `tam`)
    *   leyenda    array de {color, nombre, texto}: explicación de las barras
    *   aviso      llamada de atención (el límite de tiempo)
    *   continuar  texto del pie; se sustituye {B} por el nombre del botón
@@ -90,13 +93,20 @@ export class Briefing {
     }
     if (this.pasos && this.pasos.length) {
       c.font = T.paso + 'px ' + FUENTE.interfaz;
+      // Los pasos con icono dejan a la izquierda un cuadro del alto de dos
+      // líneas y medio; el texto se corre y se centra a su lado.
+      const tamIcono = T.paso * 3;
       let alto = 10 * s;
       const items = this.pasos.map((p) => {
-        const l = partirLineas(c, p, anchoTexto - 30 * s);
-        alto += l.length * T.paso * 1.4 + 9 * s;
-        return l;
+        const icono = typeof p === 'object' && p ? p.icono : null;
+        const texto = typeof p === 'object' && p ? p.texto : p;
+        const sangria = icono ? tamIcono + 16 * s : 24 * s;
+        const lineas = partirLineas(c, texto, anchoTexto - sangria - 6 * s);
+        const altoItem = Math.max(lineas.length * T.paso * 1.4, icono ? tamIcono : 0) + 9 * s;
+        alto += altoItem;
+        return { lineas, icono, sangria, altoItem };
       });
-      add('pasos', alto, { items });
+      add('pasos', alto, { items, tamIcono });
     }
     if (this.leyenda && this.leyenda.length) {
       c.font = T.leyenda + 'px ' + FUENTE.interfaz;
@@ -171,14 +181,31 @@ export class Briefing {
           let py = cy + 10 * s;
           c.textBaseline = 'top';
           c.textAlign = 'left';
-          b.items.forEach((lineas) => {
-            c.font = 'bold ' + T.paso + 'px ' + FUENTE.interfaz;
-            c.fillStyle = PALETA.oro;
-            c.fillText('›', izq, py);
+          b.items.forEach(({ lineas, icono, sangria, altoItem }) => {
+            const altoTexto = lineas.length * T.paso * 1.4;
+            let ty = py;
+            if (icono) {
+              // El icono, sobre una placa oscura; el texto, centrado a su lado.
+              const t = b.tamIcono;
+              c.fillStyle = 'rgba(0,0,0,0.35)';
+              c.fillRect(izq, py, t, t);
+              c.strokeStyle = 'rgba(205,187,138,0.35)';
+              c.lineWidth = 1;
+              c.strokeRect(izq + 0.5, py + 0.5, t - 1, t - 1);
+              c.save();
+              try { icono(c, izq + t / 2, py + t / 2, t); } finally { c.restore(); }
+              c.textBaseline = 'top';
+              c.textAlign = 'left';
+              ty = py + Math.max(0, (t - altoTexto) / 2);
+            } else {
+              c.font = 'bold ' + T.paso + 'px ' + FUENTE.interfaz;
+              c.fillStyle = PALETA.oro;
+              c.fillText('›', izq, py);
+            }
             c.font = T.paso + 'px ' + FUENTE.interfaz;
             c.fillStyle = MENU.beige;
-            lineas.forEach((l, i) => c.fillText(l, izq + 24 * s, py + i * T.paso * 1.4));
-            py += lineas.length * T.paso * 1.4 + 9 * s;
+            lineas.forEach((l, i) => c.fillText(l, izq + sangria, ty + i * T.paso * 1.4));
+            py += altoItem;
           });
           break;
         }

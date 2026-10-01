@@ -34,7 +34,6 @@ import { VUELO, generarCielo, Vuelo, ganadorVuelo } from '../vuelo.js';
 const COLOR_J = [PALETA.oro, PALETA.senal];
 const AZUL = '#5aa9e6';
 const ORO_ARO = '#f0c977';
-const ROJO_HALLAZGO = '#ff5a4a';   // el rojo de lo escondido en El Camino
 /** Segundos que el tablero se queda sí o sí: quien llega aleteando no se lo salta. */
 const BLOQUEO_TABLERO = 3;
 /** Dónde vuela la paloma en su mitad, en px lógicos: más a la izquierda, se ve más por delante. */
@@ -42,9 +41,12 @@ const X_PALOMA_PARTIDA = 150;
 /** Plumas que suelta al chocar. Se crean una vez y se reciclan. */
 const PLUMAS = 16;
 
-/** Lo que acaba de hacer, traducido a lo que hace el área. Pantalla final. */
+/**
+ * Lo que acaba de hacer, traducido a lo que hace el área. Pantalla final.
+ * Sin la fila «Lo que encontraste» (los hallazgos): en esta etapa no aplica
+ * (pedido del usuario, 2026-09-30).
+ */
 const ASI_TERMINAMOS = [
-  { que: 'Lo que encontraste', es: 'Los HALLAZGOS. No son para buscar culpables: son lo que hay que arreglar.' },
   { que: 'El paso más ancho', es: 'Cada hallazgo corregido deja el proceso más fácil y más seguro para todos.' },
   { que: 'Los aros', es: 'Las recomendaciones que el proceso ya puso en marcha.' },
   { que: 'Los puestos de control', es: 'El seguimiento: volvemos a mirar que el cambio se quedó.' },
@@ -1138,7 +1140,7 @@ export class EscenaRegreso extends Escena {
 
   // ---------------------------------------------------------- revelación
   _dibujarRevelacion(c, W, H) {
-    const colores = [ROJO_HALLAZGO, '#9fd0ff', ORO_ARO, '#7fe0c0', '#ffab94'];
+    const colores = ['#9fd0ff', ORO_ARO, '#7fe0c0', '#ffab94'];
     dibujarRevelacion(c, W, H, {
       titulo: 'Así terminamos',
       filas: ASI_TERMINAMOS.map((f, n) => ({ ...f, color: colores[n] })),

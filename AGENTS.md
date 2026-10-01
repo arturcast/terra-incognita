@@ -14,7 +14,7 @@ trabaje sobre este repositorio. Léelo completo antes de la primera edición.
    lo que sigue en orden (fichas con criterio de aceptación), decisiones
    pendientes del usuario (D1-D3) e historial de decisiones.
 2. Lee este archivo completo: las reglas no se negocian.
-3. Corre la batería de pruebas (§6). Debe dar 166 pass, 0 fail, 8 skipped
+3. Corre la batería de pruebas (§6). Debe dar 168 pass, 0 fail, 8 skipped
    antes de que toques nada.
 4. Construye **una** ficha a la vez, en el orden del plan, y actualiza su
    estado en el plan al terminar. No marques «hecho» lo que el usuario no

@@ -108,6 +108,8 @@ const fase = q.get('fase');
 if (fase && nombre === 'mapa') {
   escena.elegidas = REGIONES.slice(0, 5);
   escena.resultado = evaluar(escena.elegidas, 0.42);
+  // La página de La Isla Brillante cambia si la encontró: &isla=1
+  escena.resultado.islaDescubierta = q.get('isla') === '1';
   escena.fase = fase;
   escena.tFase = 0;
   escena.paginaRes = q.get('pagina') ? parseInt(q.get('pagina'), 10) : escena._ultimaPagina;
@@ -124,7 +126,7 @@ if (fase && nombre === 'mapa') {
   escena.fase = fase;
   escena.tFase = 0;
 }
-// El cierre en una página concreta (0, 1, 2): &pagina=2
+// El cierre en una página concreta (0 o 1): &pagina=1
 if (q.get('pagina') && nombre === 'cierre') escena.pagina = parseInt(q.get('pagina'), 10);
 // El Mapa con todos los lugares ya descubiertos: &descubrir=1
 if (q.get('descubrir')) REGIONES.forEach((r) => { r.descubierto = true; });

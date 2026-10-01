@@ -6,7 +6,9 @@
  * stand: no hace falta internet, y quien vuelve al día siguiente se encuentra.
  *
  * Puntos por etapa:
- *   El Mapa     — solo lo juega el Jugador 1: su nota total (0-100) × 10.
+ *   El Mapa     — su nota total (0-100) × 10. Lo maneja un solo mando, pero
+ *                 con dos jugadores lo deciden juntos: cuenta para los dos
+ *                 (pedido del usuario, 2026-09-30).
  *   El Camino   — los puntos de su carrera.
  *   El Regreso  — los puntos de su vuelo.
  */
@@ -36,7 +38,7 @@ export function recuento(puntajes = {}) {
   const jugadores = [];
   for (let k = 0; k < n; k++) {
     const porEtapa = {
-      mapa: k === 0 && puntajes.mapa ? Math.round((puntajes.mapa.total || 0) * 10) : null,
+      mapa: puntajes.mapa ? Math.round((puntajes.mapa.total || 0) * 10) : null,
       camino: camino[k] ? camino[k].puntos : null,
       regreso: regreso[k] ? regreso[k].puntos : null,
     };
@@ -94,7 +96,8 @@ export class TablaPuntajes {
 
   /**
    * Anota una partida y devuelve su puesto (1 = el mejor). Los empates
-   * quedan detrás de quien ya estaba: llegó primero.
+   * quedan detrás de quien ya estaba: llegó primero. La fila queda en
+   * `ultimaFila`, para preguntar después su puesto con `puestoDe`.
    */
   anotar(nombre, puntos, detalle = {}) {
     const fila = { nombre: limpiarNombre(nombre), puntos: Math.round(puntos), fecha: Date.now(), detalle };
@@ -103,8 +106,17 @@ export class TablaPuntajes {
     this.filas.splice(i, 0, fila);
     if (this.filas.length > MAX_TABLA) this.filas.length = MAX_TABLA;
     this._guardar();
+    this.ultimaFila = fila;
     return i + 1;
   }
+
+  /**
+   * Puesto de una fila AHORA (1 = el mejor; 0 si ya no cabe en la tabla). El
+   * que devolvió `anotar` puede quedar viejo: si después entra alguien con
+   * más puntos, la fila baja. Con dos jugadores pasaba: quedaban los dos en
+   * el puesto 3 cuando uno era el 3 y el otro el 4.
+   */
+  puestoDe(fila) { return this.filas.indexOf(fila) + 1; }
 
   mejores(n = 10) { return this.filas.slice(0, n); }
 }

@@ -321,11 +321,11 @@ test('El Mapa termina nombrando el Plan Anual, y de ahí va a la ruta', async ()
   mapa.salir();
 });
 
-test('el cierre recorre sus tres páginas', async () => {
+test('el cierre recorre sus dos páginas (la de la isla pasó a El Mapa)', async () => {
   const { motor, ctx } = montarMotor();
   const e = new EscenaCierre(motor);
   await e.entrar({ elegidas: [], islaDescubierta: false });
-  for (let pagina = 0; pagina < 3; pagina++) {
+  for (let pagina = 0; pagina < 2; pagina++) {
     correr(e, ctx, 4.5);
     e._clic = true;
     correr(e, ctx, 0.1);
@@ -393,8 +393,9 @@ test('el recuento suma las tres etapas por jugador y decide quién gana', async 
   });
   assert.equal(r.jugadores.length, 2);
   assert.deepEqual(r.jugadores[0].porEtapa, { mapa: 700, camino: 900, regreso: 3000 });
-  assert.equal(r.jugadores[1].porEtapa.mapa, null, 'El Mapa lo juega solo el Jugador 1');
+  assert.equal(r.jugadores[1].porEtapa.mapa, 700, 'El Mapa lo deciden juntos: cuenta para los dos');
   assert.equal(r.jugadores[0].total, 4600);
+  assert.equal(r.jugadores[1].total, 3900);
   assert.equal(r.ganador, 0);
 
   // La tabla: ordena, da el puesto y guarda en el almacén.
@@ -449,6 +450,54 @@ test('el recuento: cuenta, pide los nombres con letras de arcade y muestra la ta
   correr(e, ctx, 0.1);
   assert.deepEqual(motor.saltos, ['cierre']);
   e.salir();
+});
+
+test('con dos jugadores, cada uno ve su puesto real aunque el segundo entre por encima del primero', async () => {
+  const { EscenaRecuento } = await import('../src/juego/escenas/recuento.js');
+  const { motor, ctx } = montarMotor();
+  motor.expedicion.nombres = ['ANA', 'BETO'];
+  motor.expedicion.puntajes = {
+    mapa: { total: 50 },
+    camino: { resultados: [{ puntos: 500 }, { puntos: 900 }] },
+    regreso: { resultados: [{ puntos: 1000 }, { puntos: 1500 }] },
+  };
+  const e = new EscenaRecuento(motor);
+  await e.entrar();
+  const guardado = {};
+  e.tabla.almacen = { getItem: (k) => guardado[k] ?? null, setItem: (k, v) => { guardado[k] = v; } };
+  // Ya hay dos mejores que los dos jugadores: ANA queda 4.ª y BETO 3.º.
+  e.tabla.filas = [{ nombre: 'X', puntos: 9000 }, { nombre: 'Y', puntos: 8000 }];
+  correr(e, ctx, 4.5);
+  e._onTecla({ key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  correr(e, ctx, 0.1);
+  assert.equal(e.fase, 'tabla');
+  assert.deepEqual(e.tabla.mejores().map((f) => f.nombre), ['X', 'Y', 'BETO', 'ANA']);
+  assert.deepEqual(e.puestos, [4, 3], 'antes salían los dos en el puesto 3');
+  correr(e, ctx, 1);
+  e.salir();
+});
+
+test('El Mapa muestra siempre la página de La Isla Brillante, la haya encontrado o no', async () => {
+  const { evaluar, REGIONES } = await import('../src/datos/territorio.js');
+  for (const encontro of [false, true]) {
+    const { motor, ctx } = montarMotor();
+    const mapa = new EscenaMapa(motor);
+    await mapa.entrar();
+    mapa.elegidas = REGIONES.slice(0, 5);
+    mapa.resultado = evaluar(mapa.elegidas, 0.5);
+    mapa.resultado.islaDescubierta = encontro;
+    mapa.fase = 'resultado';
+    mapa.tFase = 0;
+    assert.equal(mapa._ultimaPagina, 2);
+    for (let p = 0; p < 3; p++) {
+      correr(mapa, ctx, 2);
+      assert.equal(mapa.paginaRes, p);
+      mapa.raton.clic = true;
+      correr(mapa, ctx, 0.1);
+    }
+    assert.equal(mapa.fase, 'revelacion', 'la isla va justo antes de «Así elegimos»');
+    mapa.salir();
+  }
 });
 
 test('la apertura y el mapa arrancan y dibujan sin errores', async () => {

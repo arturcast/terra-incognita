@@ -19,7 +19,6 @@ import { partirLineas } from '../../core/briefing.js';
 import {
   FUENTE, MENU, grano, vineta, suave, limitar, fondoMenu, tituloMenu, textoMenu, cajaMenu,
 } from '../../core/render.js';
-import { REGIONES } from '../../datos/territorio.js';
 
 export const ETAPAS = [
   { n: '1', titulo: 'El Mapa', capacidad: 'Mirar todo y elegir a dónde ir', equivale: 'Plan Anual de Auditoría', estado: 'listo' },
@@ -28,6 +27,11 @@ export const ETAPAS = [
 ];
 
 const ORO = '#f0c977';
+/**
+ * Páginas: 0 «Eso es Auditoría Interna» y 1 el recorrido completo. La de La
+ * Isla Brillante se pasó al final de El Mapa (pedido del usuario, 2026-09-30).
+ */
+const ULTIMA_PAGINA = 1;
 const BEIGE_TENUE = '#d6c8a2';
 
 /** Texto en cursiva con sombra dura. */
@@ -72,7 +76,7 @@ export class EscenaCierre extends Escena {
     this._clic = false;
     const listo = this.pagina === 0 ? this.t > 4.2 : this.t > 1.2;
     if (listo && confirmo) {
-      if (this.pagina < 2) {
+      if (this.pagina < ULTIMA_PAGINA) {
         this.pagina++;
         this.t = 0;
         this.motor.audio && this.motor.audio.sfx('avanzar');
@@ -91,7 +95,6 @@ export class EscenaCierre extends Escena {
     vineta(c, W, H, 0.45);
 
     if (this.pagina === 0) this._pagNombrarlo(c, W, H);
-    else if (this.pagina === 1) this._pagIsla(c, W, H);
     else this._pagRecorrido(c, W, H);
 
     this._pie(c, W, H);
@@ -104,12 +107,12 @@ export class EscenaCierre extends Escena {
     const s = this._s;
     c.textAlign = 'center';
     c.textBaseline = 'bottom';
-    textoMenu(c, 'Pulsa ' + this.nombreBoton + (this.pagina < 2 ? ' para seguir' : ' para volver al inicio'),
+    textoMenu(c, 'Pulsa ' + this.nombreBoton + (this.pagina < ULTIMA_PAGINA ? ' para seguir' : ' para volver al inicio'),
       W / 2, H - 24, Math.round(21 * s), Math.sin(this.t * 4) > -0.45 ? ORO : 'rgba(205,187,138,0.5)');
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i <= ULTIMA_PAGINA; i++) {
       c.beginPath();
-      c.arc(W / 2 - 18 + i * 18, H - 58 * s, 5, 0, Math.PI * 2);
+      c.arc(W / 2 - ULTIMA_PAGINA * 9 + i * 18, H - 58 * s, 5, 0, Math.PI * 2);
       c.fillStyle = i === this.pagina ? ORO : 'rgba(205,187,138,0.3)';
       c.fill();
     }
@@ -179,64 +182,7 @@ export class EscenaCierre extends Escena {
     }
   }
 
-  /**
-   * Página 2: el lugar de afuera.
-   *
-   * La lista de equivalencias ya la vio en el relato, justo después de
-   * decidir. Repetirla aquí le robaría el espacio al mensaje que de verdad
-   * queremos que se lleve, que es este.
-   */
-  _pagIsla(c, W, H) {
-    const cx = W / 2;
-    const encontro = this.r && this.r.islaDescubierta;
-    const isla = REGIONES.find((r) => r.id === 'isla');
-    const cuerpo = encontro
-      ? 'La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.'
-      : 'Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.';
-    const moraleja = 'Lo diferente o esporádico también debe ser analizado y revisado, porque también puede tener importancia y un impacto relevante para la compañía.';
-
-    let s = this._s, ancho, l1, l2, alto;
-    for (let intento = 0; intento < 8; intento++) {
-      ancho = Math.min(960 * s, W - 80);
-      c.font = 'italic ' + Math.round(24 * s) + 'px ' + FUENTE.narrativa;
-      l1 = partirLineas(c, cuerpo, ancho);
-      c.font = 'bold ' + Math.round(24 * s) + 'px ' + MENU.letra;
-      l2 = partirLineas(c, moraleja, ancho - 70 * s);
-      alto = 34 * s + 84 * s + 48 * s + l1.length * 34 * s + 30 * s + l2.length * 34 * s + 44 * s;
-      if (alto <= H - 150) break;
-      s *= 0.92;
-    }
-    let y = Math.max(30, (H - alto) / 2 - 20);
-    c.textAlign = 'center';
-    c.textBaseline = 'top';
-
-    c.font = Math.round(15 * s) + 'px ' + FUENTE.instrumento;
-    c.fillStyle = encontro ? '#7fe0c0' : '#ffab94';
-    c.fillText((encontro ? 'Y llegaste hasta allá' : 'Y había un lugar más').toUpperCase().split('').join(' '), cx, y);
-    y += 34 * s;
-
-    tituloMenu(c, isla.nombre, cx, y + 38 * s, Math.round(72 * s));
-    c.textBaseline = 'top';
-    y += 84 * s;
-
-    textoMenu(c, 'era ' + isla.equivale, cx, y, Math.round(26 * s), ORO);
-    y += 48 * s;
-
-    l1.forEach((l) => { cursiva(c, l, cx, y, Math.round(24 * s)); y += 34 * s; });
-    y += 24 * s;
-
-    // la moraleja, enmarcada: es la frase que queremos que se repita después
-    const altoCaja = l2.length * 34 * s + 36 * s;
-    cajaMenu(c, cx - ancho / 2, y, ancho, altoCaja, {
-      relleno: encontro ? 'rgba(10,40,30,0.82)' : 'rgba(60,14,8,0.82)',
-    });
-    let iy = y + 18 * s;
-    c.textAlign = 'center';
-    c.textBaseline = 'top';
-    l2.forEach((l) => { textoMenu(c, l, cx, iy, Math.round(24 * s), '#fff3cf'); iy += 34 * s; });
-  }
-
-  // ------------------------------ página 3: el recorrido completo
+  // ------------------------------ página 2: el recorrido completo
   _pagRecorrido(c, W, H) {
     const cx = W / 2;
     const s = this._s;
@@ -260,7 +206,7 @@ export class EscenaCierre extends Escena {
     const sep = 20 * s;
     const wTar = enFila ? (anchoTotal - sep * (porFila - 1)) / porFila : Math.min(560 * s, W - 60);
     // La altura sale del texto más largo: los lemas cambian con la revisión
-    // de textos y una tarjeta fija los dejaba montados sobre «YA SE JUEGA».
+    // de textos y una tarjeta fija los dejaba montados.
     const lineasDe = (fuente, texto) => {
       c.font = fuente;
       return partirLineas(c, texto, wTar - 36 * s).length;
@@ -268,7 +214,7 @@ export class EscenaCierre extends Escena {
     const maxLineas = Math.max(...ETAPAS.map((e) =>
       lineasDe(Math.round(19 * s) + 'px ' + FUENTE.interfaz, e.capacidad) +
       lineasDe('bold ' + Math.round(19 * s) + 'px ' + MENU.letra, e.equivale)));
-    const hTar = Math.max(230 * s, (20 + 30 + 56 + 6 + 40) * s + maxLineas * 25 * s);
+    const hTar = Math.max(200 * s, (20 + 30 + 56 + 6 + 22) * s + maxLineas * 25 * s);
     const x0 = cx - (enFila ? anchoTotal : wTar) / 2;
 
     ETAPAS.forEach((e, i) => {
@@ -299,10 +245,6 @@ export class EscenaCierre extends Escena {
       c.font = 'bold ' + Math.round(19 * s) + 'px ' + MENU.letra;
       c.fillStyle = ORO;
       partirLineas(c, e.equivale, wTar - 36 * s).forEach((l) => { c.fillText(l, mx, yy); yy += 25 * s; });
-
-      c.font = 'bold ' + Math.round(14 * s) + 'px ' + FUENTE.instrumento;
-      c.fillStyle = listo ? '#7fe0c0' : 'rgba(205,187,138,0.35)';
-      c.fillText(listo ? 'YA SE JUEGA' : 'EN DISEÑO', mx, ty + hTar - 28 * s);
     });
 
     y += (enFila ? 1 : ETAPAS.length) * (hTar + sep) + 26 * s;

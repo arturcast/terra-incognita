@@ -18,8 +18,8 @@ import { Escena } from '../../core/engine.js';
 import { Puntero, Acciones } from '../../core/input.js';
 import { Briefing, partirLineas } from '../../core/briefing.js';
 import {
-  PALETA, FUENTE, rectRedondeado, anillo, barraLectura,
-  grano, vineta, suave, limitar, cajaMenu, tituloMenu, fondoMenu,
+  PALETA, FUENTE, MENU, rectRedondeado, anillo, barraLectura,
+  grano, vineta, suave, limitar, cajaMenu, tituloMenu, textoMenu, fondoMenu,
 } from '../../core/render.js';
 
 /**
@@ -66,6 +66,29 @@ const ASI_ELEGIMOS = [
   { que: 'El orden', es: 'La prioridad. No es lo mismo llegar en enero que en noviembre: a lo más crítico se va primero.' },
   { que: 'Lo que se te escapó', es: 'También nos pasa. Por eso los riesgos se vigilan de forma permanente: si aparece algo relevante, el plan se ajusta en ese momento, sin esperar.' },
 ];
+/**
+ * La página de La Isla Brillante, al final de los resultados: cambia según la
+ * haya encontrado o no. Si no, el mensaje es que no ver algo relevante es un
+ * riesgo, porque lo que no se ve no entra en el plan.
+ */
+const TEXTO_ISLA = {
+  encontrada: {
+    etiqueta: 'Y LLEGASTE HASTA ALLÁ',
+    cuerpo: 'La encontraste, y eso es raro: casi nadie se sale del mapa a mirar. Es el negocio que no se ' +
+      'parece al resto, tiene retos y riesgos distintos, y también requiere una revisión especial por su relevancia.',
+    moraleja: 'Lo diferente o esporádico también debe ser analizado y revisado, porque también puede tener ' +
+      'importancia y un impacto relevante para la compañía.',
+  },
+  perdida: {
+    etiqueta: 'HABÍA UN LUGAR MÁS',
+    cuerpo: 'No la encontraste. Casi nadie la encuentra, porque para verla hay que mirar por fuera del mapa. ' +
+      'Es el negocio que no se parece al resto, tiene retos y riesgos distintos, y también requiere una ' +
+      'revisión especial por su relevancia.',
+    moraleja: 'A veces no se identifica una situación relevante y se queda por fuera del plan. Ese es un ' +
+      'riesgo: lo diferente o esporádico también puede tener un impacto importante para la compañía.',
+  },
+};
+
 /** Teclas que mueven la linterna, y hacia dónde. */
 const TECLAS_DIR = {
   w: 'arriba', ArrowUp: 'arriba', s: 'abajo', ArrowDown: 'abajo',
@@ -420,9 +443,9 @@ export class EscenaMapa extends Escena {
   }
 
   get _ultimaPagina() {
-    // Página extra solo si no encontró la isla: ahí está el mensaje que más
-    // importa y merece pantalla propia.
-    return this.resultado && !this.resultado.islaDescubierta ? 2 : 1;
+    // La tercera página es siempre la de La Isla Brillante: haya o no haya
+    // encontrado la isla, su mensaje es el que más importa de la etapa.
+    return 2;
   }
 
   _irA(fase) {
@@ -1372,8 +1395,10 @@ export class EscenaMapa extends Escena {
   // ------------------------------------------------------------ resultado
   _dibujarResultado(c, W, H) {
     this._fondoLectura(c, W, H);
-    // Cada página ocupa distinto: se agranda según lo suyo.
-    const [aw, ah] = this.paginaRes === 0 ? [780, 430] : this.paginaRes === 1 ? [880, 540] : [820, 470];
+    // Cada página ocupa distinto: se agranda según lo suyo. La de la isla se
+    // mide, porque su texto cambia según la haya encontrado o no.
+    const [aw, ah] = this.paginaRes === 0 ? [780, 430] : this.paginaRes === 1 ? [880, 540]
+      : [880, this._resIsla(c, 880, 0, true) + 130];
     this._escalar(c, W, H, aw, ah, (w, h) => {
       if (this.paginaRes === 0) this._resNotas(c, w, h);
       else if (this.paginaRes === 1) this._resDetalle(c, w, h);
@@ -1480,7 +1505,13 @@ export class EscenaMapa extends Escena {
       c.fillText(bien ? '✓' : '·', cx - anchoCol / 2, y);
       c.font = '15px ' + FUENTE.narrativa;
       c.fillStyle = PALETA.tinta;
-      c.fillText((i + 1) + '. ' + r.nombre, cx - anchoCol / 2 + 20, y);
+      const nombre = (i + 1) + '. ' + r.nombre;
+      c.fillText(nombre, cx - anchoCol / 2 + 20, y);
+      // Al lado, el proceso real (pedido del usuario, 2026-09-30).
+      const wNombre = c.measureText(nombre).width;
+      c.font = '13px ' + FUENTE.interfaz;
+      c.fillStyle = PALETA.oro;
+      c.fillText('· ' + r.equivale, cx - anchoCol / 2 + 28 + wNombre, y + 2);
       c.font = '13px ' + FUENTE.interfaz;
       c.fillStyle = bien ? PALETA.tintaTenue : PALETA.alerta;
       c.textAlign = 'right';
@@ -1515,6 +1546,10 @@ export class EscenaMapa extends Escena {
       c.font = '19px ' + FUENTE.narrativa;
       c.fillStyle = PALETA.tinta;
       c.fillText(r.nombre, ix, iy);
+      const wNombre = c.measureText(r.nombre).width;
+      c.font = '15px ' + FUENTE.interfaz;
+      c.fillStyle = PALETA.oro;
+      c.fillText('· ' + r.equivale, ix + wNombre + 10, iy + 3);
       iy += 28;
 
       c.font = '14px ' + FUENTE.interfaz;
@@ -1541,31 +1576,59 @@ export class EscenaMapa extends Escena {
     return 16 + 20 + 28 + n * 20 + 12;
   }
 
-  /** Página dedicada al lugar que casi nadie encuentra. */
-  _resIsla(c, W, H) {
+  /**
+   * Página dedicada al lugar que casi nadie encuentra. Sale siempre, antes de
+   * «Así elegimos», y dice algo distinto según la haya encontrado o no
+   * (pedido del usuario, 2026-09-30; antes estaba en el cierre del recorrido).
+   * @param {boolean} [soloMedir] devuelve el alto del bloque sin dibujar nada
+   */
+  _resIsla(c, W, H, soloMedir = false) {
     const isla = REGIONES.find((r) => r.id === 'isla');
+    const encontro = !!(this.resultado && this.resultado.islaDescubierta);
+    const t = TEXTO_ISLA[encontro ? 'encontrada' : 'perdida'];
     const cx = W / 2;
-    const ancho = Math.min(720, W - 100);
-    let y = Math.max(50, H * 0.14);
+    const ancho = Math.min(760, W - 80);
+
+    c.font = 'italic 21px ' + FUENTE.narrativa;
+    const cuerpo = partirLineas(c, t.cuerpo, ancho);
+    c.font = 'bold 20px ' + MENU.letra;
+    const moraleja = partirLineas(c, t.moraleja, ancho - 60);
+    const altoCaja = moraleja.length * 29 + 30;
+    const alto = 32 + 72 + 40 + cuerpo.length * 30 + 22 + altoCaja;
+    if (soloMedir) return alto;
+    let y = Math.max(30, (H - alto) / 2 - 30);
 
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    c.font = '11px ' + FUENTE.instrumento;
-    c.fillStyle = PALETA.riesgo;
-    c.fillText('HABÍA UN LUGAR MÁS', cx, y);
-    y += 34;
+    c.font = '13px ' + FUENTE.instrumento;
+    c.fillStyle = encontro ? '#7fe0c0' : '#ffab94';
+    c.fillText(t.etiqueta.split('').join(' '), cx, y);
+    y += 32;
 
-    tituloMenu(c, isla.nombre, cx, y + 22, 46);
+    tituloMenu(c, isla.nombre, cx, y + 32, 60);
     c.textBaseline = 'top';
-    y += 54;
+    y += 72;
 
-    c.font = 'italic 17px ' + FUENTE.narrativa;
-    c.fillStyle = PALETA.tintaTenue;
-    partirLineas(c, isla.verdad, ancho).forEach((l) => { c.fillText(l, cx, y); y += 26; });
-    y += 20;
+    textoMenu(c, 'era ' + isla.equivale, cx, y, 22, PALETA.oroClaro);
+    y += 40;
 
-    c.font = '15px ' + FUENTE.interfaz;
-    c.fillStyle = PALETA.tinta;
-    partirLineas(c, isla.porQueImporta, ancho).forEach((l) => { c.fillText(l, cx, y); y += 22; });
+    c.font = 'italic 21px ' + FUENTE.narrativa;
+    cuerpo.forEach((l) => {
+      c.fillStyle = 'rgba(0,0,0,0.85)';
+      c.fillText(l, cx + 2, y + 2);
+      c.fillStyle = '#d6c8a2';
+      c.fillText(l, cx, y);
+      y += 30;
+    });
+    y += 22;
+
+    // La moraleja, enmarcada: es la frase que queremos que se lleve.
+    cajaMenu(c, cx - ancho / 2, y, ancho, altoCaja, {
+      relleno: encontro ? 'rgba(10,40,30,0.82)' : 'rgba(60,14,8,0.82)',
+    });
+    let iy = y + 15;
+    c.textAlign = 'center';
+    c.textBaseline = 'top';
+    moraleja.forEach((l) => { textoMenu(c, l, cx, iy, 20, '#fff3cf'); iy += 29; });
   }
 }
