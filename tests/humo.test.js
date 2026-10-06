@@ -406,6 +406,20 @@ test('el recuento suma las tres etapas por jugador y decide quién gana', async 
   assert.equal(tabla.anotar('beto', 5000), 1);
   assert.equal(tabla.anotar('cata', 4000), 2);
   assert.deepEqual(new TablaPuntajes(almacen).mejores().map((f) => f.nombre), ['BETO', 'CATA', 'ANA']);
+
+  // Quitar una sola fila (panel J): desde otra instancia, como hace el panel.
+  const cata = new TablaPuntajes(almacen).filas[1];
+  assert.equal(new TablaPuntajes(almacen).quitar(cata), true);
+  assert.deepEqual(new TablaPuntajes(almacen).mejores().map((f) => f.nombre), ['BETO', 'ANA']);
+  assert.equal(new TablaPuntajes(almacen).quitar(cata), false, 'ya no está: no quita otra');
+
+  // El recuento abre su tabla al entrar; si el operador quita una fila mientras
+  // escriben el nombre, al anotar no puede revivir.
+  const delRecuento = new TablaPuntajes(almacen);
+  new TablaPuntajes(almacen).quitar(new TablaPuntajes(almacen).filas[0]);   // fuera BETO
+  delRecuento.anotar('dani', 3500);
+  assert.deepEqual(new TablaPuntajes(almacen).mejores().map((f) => f.nombre), ['DANI', 'ANA']);
+  assert.equal(delRecuento.puestoDe(delRecuento.ultimaFila), 1);
   assert.equal(limpiarNombre('   '), 'SIN NOMBRE');
   assert.equal(limpiarNombre('nombre demasiado largo'), 'NOMBRE DEM');
 });
@@ -467,6 +481,7 @@ test('con dos jugadores, cada uno ve su puesto real aunque el segundo entre por 
   e.tabla.almacen = { getItem: (k) => guardado[k] ?? null, setItem: (k, v) => { guardado[k] = v; } };
   // Ya hay dos mejores que los dos jugadores: ANA queda 4.ª y BETO 3.º.
   e.tabla.filas = [{ nombre: 'X', puntos: 9000 }, { nombre: 'Y', puntos: 8000 }];
+  e.tabla._guardar();                            // anotar relee el almacén
   correr(e, ctx, 4.5);
   e._onTecla({ key: 'Enter', preventDefault() {}, stopPropagation() {} });
   correr(e, ctx, 0.1);

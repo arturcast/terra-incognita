@@ -165,6 +165,16 @@
   .pm-ejes u{position:relative;display:block;height:6px;background:#0b131c;border-radius:3px;text-decoration:none}
   .pm-ejes s{position:absolute;top:0;bottom:0;border-radius:3px;text-decoration:none}
 
+  .pm-tabla{max-height:260px;overflow-y:auto;margin-bottom:8px;border:1px solid rgba(255,255,255,.07);border-radius:8px}
+  .pm-tfila{display:grid;grid-template-columns:26px 1fr auto auto auto;gap:10px;align-items:center;
+    padding:5px 8px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .pm-tfila:last-child{border-bottom:none}
+  .pm-tpuesto{font:11px Consolas,monospace;color:var(--debil);text-align:right}
+  .pm-tfila.visible .pm-tpuesto,.pm-tfila.visible .pm-tnombre{color:var(--oro)}
+  .pm-tnombre{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pm-tpuntos{font-family:Consolas,monospace}
+  .pm-accion.pm-peligro{background:#e0614a;border-color:#e0614a;color:#06080d;font-weight:600}
+
   .pm-nota{margin-top:16px;font-size:11px;line-height:1.7;color:var(--debil)}
   .pm-nota b{color:var(--oro)}
 

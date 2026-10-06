@@ -82,6 +82,29 @@ export class TablaPuntajes {
     this._guardar();
   }
 
+  /**
+   * Quita una sola partida (lo usa el operador desde el panel de mandos, p. ej.
+   * para retirar un nombre ofensivo o una prueba). Se relee el almacén antes:
+   * la lista del panel puede llevar abierta un rato mientras otra escena anota.
+   * La fila se reconoce por nombre, puntos y fecha, no por su puesto, que se
+   * corre si alguien entra entre tanto. Devuelve si la encontró.
+   */
+  quitar(fila) {
+    this.filas = this._leer();
+    const i = this._indice(fila);
+    if (i < 0) return false;
+    this.filas.splice(i, 1);
+    this._guardar();
+    return true;
+  }
+
+  /** Dónde está una fila, reconocida por nombre, puntos y fecha (no por referencia). */
+  _indice(fila) {
+    if (!fila) return -1;
+    return this.filas.findIndex((f) =>
+      f.nombre === fila.nombre && f.puntos === fila.puntos && f.fecha === fila.fecha);
+  }
+
   _leer() {
     try {
       const f = JSON.parse(this.almacen && this.almacen.getItem(CLAVE_TABLA)) || [];
@@ -98,8 +121,12 @@ export class TablaPuntajes {
    * Anota una partida y devuelve su puesto (1 = el mejor). Los empates
    * quedan detrás de quien ya estaba: llegó primero. La fila queda en
    * `ultimaFila`, para preguntar después su puesto con `puestoDe`.
+   * Se relee el almacén antes: el recuento abre su tabla al entrar y el
+   * operador puede quitar una fila o borrar la tabla (panel J) mientras
+   * escriben el nombre; sin releer, esa fila revivía al guardar.
    */
   anotar(nombre, puntos, detalle = {}) {
+    this.filas = this._leer();
     const fila = { nombre: limpiarNombre(nombre), puntos: Math.round(puntos), fecha: Date.now(), detalle };
     let i = this.filas.findIndex((f) => f.puntos < fila.puntos);
     if (i < 0) i = this.filas.length;
@@ -114,9 +141,10 @@ export class TablaPuntajes {
    * Puesto de una fila AHORA (1 = el mejor; 0 si ya no cabe en la tabla). El
    * que devolvió `anotar` puede quedar viejo: si después entra alguien con
    * más puntos, la fila baja. Con dos jugadores pasaba: quedaban los dos en
-   * el puesto 3 cuando uno era el 3 y el otro el 4.
+   * el puesto 3 cuando uno era el 3 y el otro el 4. Se busca por contenido:
+   * `anotar` relee el almacén y las filas son objetos nuevos.
    */
-  puestoDe(fila) { return this.filas.indexOf(fila) + 1; }
+  puestoDe(fila) { return this._indice(fila) + 1; }
 
   mejores(n = 10) { return this.filas.slice(0, n); }
 }

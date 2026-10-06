@@ -131,7 +131,7 @@ teclado** deja la experiencia jugable. Es una red de seguridad deliberada.
 | Tecla | Acción |
 |---|---|
 | `F` | Pantalla completa |
-| `J` | Panel de mandos: asignar Jugador 1 y 2, sincronizar mandos, **borrar la tabla de puntajes** (también `F9`, pero en portátiles esa tecla suele ser volumen o brillo) |
+| `J` | Panel de mandos: asignar Jugador 1 y 2, sincronizar mandos, **ver la tabla de puntajes y quitar una partida o borrarla entera** (también `F9`, pero en portátiles esa tecla suele ser volumen o brillo) |
 | `P` | Sala de prueba de dos jugadores |
 | `1` / `2` / `3` | Saltar a una etapa (para ensayar) |
 | `0` | Ver la pantalla del recorrido |

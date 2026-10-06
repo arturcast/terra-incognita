@@ -60,6 +60,7 @@ export class PanelMandos {
         <div class="pm-prueba"></div>
         <div class="pm-diag"></div>
         <div class="pm-sub" style="margin-top:18px">PUNTAJES</div>
+        <div class="pm-puntajes"></div>
         <button class="pm-accion pm-borrar">Borrar tabla de puntajes</button>
         <div class="pm-borrado"></div>
         <div class="pm-nota">
@@ -72,6 +73,7 @@ export class PanelMandos {
     this.zonaJugadores = this.raiz.querySelector('.pm-jugadores');
     this.zonaPrueba = this.raiz.querySelector('.pm-prueba');
     this.zonaDiag = this.raiz.querySelector('.pm-diag');
+    this.zonaPuntajes = this.raiz.querySelector('.pm-puntajes');
 
     this.raiz.querySelector('.pm-sync').addEventListener('click', () => this._sincronizar());
     this.raiz.querySelector('.pm-calibrar').addEventListener('click', () => {
@@ -100,6 +102,7 @@ export class PanelMandos {
       }
       armado = false;
       new TablaPuntajes().borrar();
+      this._pintarPuntajes();
       borrar.textContent = 'Borrar tabla de puntajes';
       zonaBorrado.innerHTML = '<div class="pm-ok">Tabla de puntajes vacía.</div>';
       setTimeout(() => { zonaBorrado.innerHTML = ''; }, 3000);
@@ -117,6 +120,9 @@ export class PanelMandos {
     if (this.abierto) {
       this.gestor.refrescar();
       this._pintarLista();
+      // Los puntajes se pintan al abrir y al quitar, no en el refresco de 250 ms:
+      // repintarlos borraría el «¿Seguro?» a medio confirmar.
+      this._pintarPuntajes();
       this._refresco = setInterval(() => { this._pintarLista(); this._pintarDiagnostico(); }, 250);
     } else {
       clearInterval(this._refresco);
@@ -233,6 +239,62 @@ export class PanelMandos {
         botones.appendChild(this._boton('Soltar', () => this.gestor.soltar(m.id)));
       }
       this.lista.appendChild(fila);
+    }
+  }
+
+  /**
+   * La tabla de los mejores entera (hasta 50; en el juego se ven los 10
+   * primeros, marcados aquí), con «Quitar» en cada fila. Quitar pide un
+   * segundo clic, igual que borrar la tabla: no se pierde una fila por error.
+   */
+  _pintarPuntajes() {
+    const tabla = new TablaPuntajes();
+    const filas = tabla.filas;
+    this.zonaPuntajes.innerHTML = '';
+    if (!filas.length) {
+      this.zonaPuntajes.innerHTML = '<div class="pm-tenue" style="margin-bottom:8px">La tabla está vacía.</div>';
+      return;
+    }
+    const lista = document.createElement('div');
+    lista.className = 'pm-tabla';
+    filas.forEach((f, i) => {
+      const fila = document.createElement('div');
+      fila.className = 'pm-tfila' + (i < 10 ? ' visible' : '');
+      const fecha = f.fecha ? new Date(f.fecha).toLocaleString('es-CO',
+        { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      fila.innerHTML = `
+        <span class="pm-tpuesto">${i + 1}</span>
+        <b class="pm-tnombre"></b>
+        <span class="pm-tpuntos">${f.puntos.toLocaleString('es-CO')}</span>
+        <span class="pm-tenue">${fecha}</span>`;
+      // El nombre lo escribió un visitante: va como texto, nunca como HTML.
+      fila.querySelector('.pm-tnombre').textContent = f.nombre;
+
+      const quitar = this._boton('Quitar', () => {
+        if (!quitar.dataset.armado) {
+          quitar.dataset.armado = '1';
+          quitar.textContent = '¿Seguro?';
+          quitar.classList.add('pm-peligro');
+          setTimeout(() => {
+            delete quitar.dataset.armado;
+            quitar.textContent = 'Quitar';
+            quitar.classList.remove('pm-peligro');
+          }, 4000);
+          return;
+        }
+        new TablaPuntajes().quitar(f);
+        this._pintarPuntajes();
+      });
+      fila.appendChild(quitar);
+      lista.appendChild(fila);
+    });
+    this.zonaPuntajes.appendChild(lista);
+    if (filas.length > 10) {
+      const nota = document.createElement('div');
+      nota.className = 'pm-tenue';
+      nota.style.margin = '6px 0 8px';
+      nota.textContent = 'En dorado, los 10 que se ven en el juego.';
+      this.zonaPuntajes.appendChild(nota);
     }
   }
 

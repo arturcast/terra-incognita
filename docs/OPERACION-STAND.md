@@ -46,7 +46,9 @@ Empareja los dos con antelación. En el evento no hay tiempo.
    mandos quietos sobre la mesa, o desde el menú principal → Controles →
    «Calibrar mandos», que además deja probar la linterna.
 7. **Vacía la tabla de puntajes** si quedaron las pruebas: tecla `J` → abajo,
-   «Borrar tabla de puntajes» (pulsa dos veces para confirmar).
+   «Borrar tabla de puntajes» (pulsa dos veces para confirmar). Para quitar
+   **una sola** partida (una prueba, un nombre que no va), en la misma sección
+   está la tabla completa: «Quitar» en esa fila y otra vez «¿Seguro?».
 
 Si algo falla, abre `herramientas/joycon-lab/abrir.cmd`: ahí se ve si el problema
 es el mando o el juego.
